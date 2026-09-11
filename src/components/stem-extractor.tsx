@@ -155,6 +155,7 @@ export function StemExtractor() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="htdemucs.yaml">htdemucs (Standard 4-Stems: Vocals, Drums, Bass, Other)</SelectItem>
+                  <SelectItem value="htdemucs_6s.yaml">htdemucs_6s (6-Stems: Vocals, Bass, Drums, Other, Guitar, Piano)</SelectItem>
                   <SelectItem value="UVR_MDXNET_KARA_2.onnx">UVR MDX-Net Kara 2 (Vocal / Instrumental)</SelectItem>
                   <SelectItem value="UVR-MDX-NET-Inst_HQ_3.onnx">UVR MDX-Net Inst HQ 3 (High Quality Instrumental)</SelectItem>
                   <SelectItem value="Kim_Vocal_2.onnx">Kim Vocal 2 (High Quality Vocals)</SelectItem>
