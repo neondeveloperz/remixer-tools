@@ -52,10 +52,17 @@ struct VideoInfo {
     duration: Option<f64>,
 }
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 #[tauri::command]
 async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String, String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let ytdlp_path = app_dir.join("yt-dlp.exe");
+    let ytdlp_path = if cfg!(target_os = "windows") {
+        app_dir.join("yt-dlp.exe")
+    } else {
+        app_dir.join("yt-dlp")
+    };
     
     let output = std::process::Command::new(&ytdlp_path)
         .arg("--dump-json")
@@ -101,44 +108,79 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
 
-    let ytdlp_path = app_dir.join("yt-dlp.exe");
-    let ffmpeg_path = app_dir.join("ffmpeg.exe");
+    let ytdlp_path = if cfg!(target_os = "windows") {
+        app_dir.join("yt-dlp.exe")
+    } else {
+        app_dir.join("yt-dlp")
+    };
+    let ffmpeg_path = if cfg!(target_os = "windows") {
+        app_dir.join("ffmpeg.exe")
+    } else {
+        app_dir.join("ffmpeg")
+    };
 
-    // Auto download yt-dlp.exe
+    // Auto download yt-dlp
     if !ytdlp_path.exists() {
         app.emit("setup-log", "Downloading yt-dlp...").unwrap();
+        let download_url = if cfg!(target_os = "windows") {
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+        } else if cfg!(target_os = "macos") {
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+        } else {
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+        };
         let response =
-            reqwest::get("https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe")
+            reqwest::get(download_url)
                 .await
                 .map_err(|e| e.to_string())?;
         let bytes = response.bytes().await.map_err(|e| e.to_string())?;
         std::fs::write(&ytdlp_path, bytes).map_err(|e| e.to_string())?;
+        
+        #[cfg(unix)]
+        {
+            let mut perms = std::fs::metadata(&ytdlp_path).map_err(|e| e.to_string())?.permissions();
+            perms.set_mode(0o755);
+            std::fs::set_permissions(&ytdlp_path, perms).map_err(|e| e.to_string())?;
+        }
+        
         app.emit("setup-log", "yt-dlp downloaded.").unwrap();
     }
 
     // Auto download ffmpeg
     if !ffmpeg_path.exists() {
-        app.emit("setup-log", "Downloading ffmpeg (required for audio extraction and HD video)...").unwrap();
-        let response = reqwest::get("https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip")
-            .await.map_err(|e| e.to_string())?;
-        let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+        if cfg!(target_os = "windows") {
+            app.emit("setup-log", "Downloading ffmpeg (required for audio extraction and HD video)...").unwrap();
+            let response = reqwest::get("https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip")
+                .await.map_err(|e| e.to_string())?;
+            let bytes = response.bytes().await.map_err(|e| e.to_string())?;
 
-        app.emit("setup-log", "Extracting ffmpeg...").unwrap();
-        let reader = Cursor::new(bytes);
-        let mut archive = ZipArchive::new(reader).map_err(|e| e.to_string())?;
+            app.emit("setup-log", "Extracting ffmpeg...").unwrap();
+            let reader = Cursor::new(bytes);
+            let mut archive = ZipArchive::new(reader).map_err(|e| e.to_string())?;
 
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
-            let out_name = file.name().to_string();
-            if out_name.ends_with("ffmpeg.exe") {
-                let mut outfile = std::fs::File::create(&ffmpeg_path).map_err(|e| e.to_string())?;
-                std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
-            } else if out_name.ends_with("ffprobe.exe") {
-                let mut outfile = std::fs::File::create(app_dir.join("ffprobe.exe")).map_err(|e| e.to_string())?;
-                std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+            for i in 0..archive.len() {
+                let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
+                let out_name = file.name().to_string();
+                if out_name.ends_with("ffmpeg.exe") {
+                    let mut outfile = std::fs::File::create(&ffmpeg_path).map_err(|e| e.to_string())?;
+                    std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+                } else if out_name.ends_with("ffprobe.exe") {
+                    let mut outfile = std::fs::File::create(app_dir.join("ffprobe.exe")).map_err(|e| e.to_string())?;
+                    std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
+                }
+            }
+            app.emit("setup-log", "ffmpeg installed.").unwrap();
+        } else {
+            app.emit("setup-log", "On macOS/Linux, please install ffmpeg manually (e.g., brew install ffmpeg). Skipping auto-download.").unwrap();
+            // Create a dummy file so it doesn't keep checking
+            let _ = std::fs::File::create(&ffmpeg_path);
+            #[cfg(unix)]
+            {
+                let mut perms = std::fs::metadata(&ffmpeg_path).unwrap().permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(&ffmpeg_path, perms);
             }
         }
-        app.emit("setup-log", "ffmpeg installed.").unwrap();
     }
 
     // Check for updates
@@ -158,7 +200,11 @@ async fn run_ytdlp(
     quality: String,
 ) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-    let ytdlp_path = app_dir.join("yt-dlp.exe");
+    let ytdlp_path = if cfg!(target_os = "windows") {
+        app_dir.join("yt-dlp.exe")
+    } else {
+        app_dir.join("yt-dlp")
+    };
 
     app.emit("ytdlp-log", format!("Starting download for {}...", id)).unwrap();
 
@@ -187,7 +233,11 @@ async fn run_ytdlp(
         
         cmd.arg("--newline");
         cmd.arg("--progress-template").arg(progress_template);
-        cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
+        
+        // Only specify ffmpeg-location if we actually downloaded a real ffmpeg
+        if cfg!(target_os = "windows") {
+            cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
+        }
         
         let settings = get_settings(app_clone2).unwrap_or_default();
         if let Some(template) = settings.filename_template {
@@ -277,12 +327,53 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         venv_dir.join("bin").join("audio-separator")
     };
     
+    let python_dir = app_dir.join("python");
+    let python_exe_path = if cfg!(target_os = "windows") {
+        python_dir.join("python").join("python.exe")
+    } else {
+        python_dir.join("python").join("bin").join("python3")
+    };
+    
+    // Auto download standalone python if not exists
+    if !python_dir.exists() {
+        app.emit("stem-log", "Downloading standalone Python environment (approx 35MB)...").unwrap();
+        let python_url = if cfg!(target_os = "windows") {
+            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-pc-windows-msvc-shared-install_only.tar.gz"
+        } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-aarch64-apple-darwin-install_only.tar.gz"
+        } else if cfg!(target_os = "macos") {
+            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-apple-darwin-install_only.tar.gz"
+        } else {
+            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-unknown-linux-gnu-install_only.tar.gz"
+        };
+        
+        let response = reqwest::get(python_url).await.map_err(|e| e.to_string())?;
+        let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+        
+        let tar_path = app_dir.join("python.tar.gz");
+        std::fs::write(&tar_path, bytes).map_err(|e| e.to_string())?;
+        
+        app.emit("stem-log", "Extracting Python environment...").unwrap();
+        std::fs::create_dir_all(&python_dir).map_err(|e| e.to_string())?;
+        
+        let mut tar_cmd = std::process::Command::new("tar");
+        tar_cmd.arg("-xzf").arg(&tar_path).arg("-C").arg(&python_dir);
+        let tar_status = tar_cmd.status().map_err(|e| format!("Failed to run tar command: {}", e))?;
+        
+        if !tar_status.success() {
+            return Err("Failed to extract standalone Python.".to_string());
+        }
+        
+        let _ = std::fs::remove_file(&tar_path);
+        app.emit("stem-log", "Standalone Python environment is ready.").unwrap();
+    }
+    
     // Check if audio-separator is installed
     if !separator_path.exists() {
         app.emit("stem-log", "Creating Python Virtual Environment... This may take a while.").unwrap();
         
         if !venv_dir.exists() {
-            let status = std::process::Command::new("python")
+            let status = std::process::Command::new(&python_exe_path)
                 .arg("-m")
                 .arg("venv")
                 .arg(&venv_dir)
@@ -290,7 +381,7 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 .map_err(|e| e.to_string())?;
                 
             if !status.success() {
-                return Err("Failed to create Python virtual environment. Is Python installed?".to_string());
+                return Err("Failed to create Python virtual environment with standalone Python.".to_string());
             }
         }
         
@@ -307,17 +398,28 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         cmd_rm.arg("uninstall").arg("-y").arg("onnxruntime");
         let _ = cmd_rm.status();
 
-        // 2. Install PyTorch with CUDA support
-        app.emit("stem-log", "Installing PyTorch with CUDA (approx 2.5GB)...").unwrap();
+        // 2. Install PyTorch with or without CUDA
         let mut cmd_torch = std::process::Command::new(&pip_path);
-        cmd_torch.arg("install")
-                 .arg("torch").arg("torchvision").arg("torchaudio")
-                 .arg("--index-url").arg("https://download.pytorch.org/whl/cu124")
-                 .arg("--upgrade");
+        if cfg!(target_os = "windows") {
+            app.emit("stem-log", "Installing PyTorch with CUDA (approx 2.5GB)...").unwrap();
+            cmd_torch.arg("install")
+                     .arg("torch").arg("torchvision").arg("torchaudio")
+                     .arg("--index-url").arg("https://download.pytorch.org/whl/cu124")
+                     .arg("--prefer-binary")
+                     .arg("--upgrade");
+        } else {
+            app.emit("stem-log", "Installing PyTorch (approx 1GB)...").unwrap();
+            cmd_torch.arg("install")
+                     .arg("torch").arg("torchvision").arg("torchaudio")
+                     .arg("--prefer-binary")
+                     .arg("--upgrade");
+        }
         
         let mut child_torch = cmd_torch.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
         
         let stdout_torch = child_torch.stdout.take().unwrap();
+        let stderr_torch = child_torch.stderr.take().unwrap();
+        
         let app_torch = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout_torch);
@@ -328,27 +430,64 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             }
         });
         
-        let _ = child_torch.wait();
+        let app_torch_err = app.clone();
+        std::thread::spawn(move || {
+            let reader = BufReader::new(stderr_torch);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let _ = app_torch_err.emit("stem-log", line);
+                }
+            }
+        });
+        
+        let status_torch = child_torch.wait().map_err(|e| e.to_string())?;
+        if !status_torch.success() {
+            return Err("Failed to install PyTorch. Check the logs for details.".to_string());
+        }
 
-        // 3. Install audio-separator and onnxruntime-directml
-        app.emit("stem-log", "Installing audio-separator and ONNX Runtime DirectML...").unwrap();
+        // 3. Install audio-separator and onnxruntime
         let mut cmd = std::process::Command::new(&pip_path);
-        cmd.arg("install")
-           .arg("audio-separator")
-           .arg("audioread")
-           .arg("onnxruntime-directml")
-           .arg("--upgrade")
-           .arg("--no-warn-script-location");
+        if cfg!(target_os = "windows") {
+            app.emit("stem-log", "Installing audio-separator and ONNX Runtime DirectML...").unwrap();
+            cmd.arg("install")
+               .arg("audio-separator")
+               .arg("audioread")
+               .arg("onnxruntime-directml")
+               .arg("--prefer-binary")
+               .arg("--upgrade")
+               .arg("--no-warn-script-location");
+        } else {
+            app.emit("stem-log", "Installing audio-separator and ONNX Runtime...").unwrap();
+            cmd.arg("install")
+               .arg("audio-separator")
+               .arg("audioread")
+               .arg("onnxruntime")
+               .arg("--prefer-binary")
+               .arg("--upgrade")
+               .arg("--no-warn-script-location");
+        }
         
         let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
         
         let stdout = child.stdout.take().unwrap();
+        let stderr = child.stderr.take().unwrap();
+        
         let app_clone = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
                     let _ = app_clone.emit("stem-log", line);
+                }
+            }
+        });
+        
+        let app_clone_err = app.clone();
+        std::thread::spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let _ = app_clone_err.emit("stem-log", line);
                 }
             }
         });
@@ -405,7 +544,11 @@ async fn run_stem_extractor(
         cmd.arg("--output_format").arg(&output_format);
         
         if use_gpu {
-            cmd.arg("--use_directml");
+            if cfg!(target_os = "windows") {
+                cmd.arg("--use_directml");
+            } else {
+                cmd.arg("--use_autocast");
+            }
         }
         
         if !target_dir.is_empty() {
