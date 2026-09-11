@@ -546,9 +546,8 @@ async fn run_stem_extractor(
         if use_gpu {
             if cfg!(target_os = "windows") {
                 cmd.arg("--use_directml");
-            } else {
-                cmd.arg("--use_autocast");
             }
+            // On macOS, audio-separator auto-detects MPS/CoreML, and --use_autocast breaks PyTorch 2.2.2
         }
         
         if !target_dir.is_empty() {
