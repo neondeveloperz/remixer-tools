@@ -509,6 +509,8 @@ async fn run_stem_extractor(
     model: String,
     output_format: String,
     use_gpu: bool,
+    overlap: Option<String>,
+    segment_size: Option<String>,
 ) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     let venv_dir = app_dir.join("venv");
@@ -542,6 +544,28 @@ async fn run_stem_extractor(
         cmd.arg(&input_file);
         cmd.arg("--model_filename").arg(&model);
         cmd.arg("--output_format").arg(&output_format);
+        
+        if let Some(overlap_val) = &overlap {
+            let overlap_float = match overlap_val.as_str() {
+                "2" => "0.2",
+                "4" => "0.4",
+                "6" => "0.6",
+                "8" => "0.8",
+                "10" => "0.99",
+                other => other,
+            };
+            
+            cmd.arg("--mdx_overlap").arg(overlap_float);
+            cmd.arg("--demucs_overlap").arg(overlap_float);
+            cmd.arg("--demucs_shifts").arg(overlap_val);
+            cmd.arg("--mdxc_overlap").arg(overlap_val);
+        }
+        
+        if let Some(segment_val) = &segment_size {
+            cmd.arg("--mdx_segment_size").arg(segment_val);
+            cmd.arg("--mdxc_segment_size").arg(segment_val);
+            cmd.arg("--demucs_segment_size").arg(segment_val);
+        }
         
         if use_gpu {
             if cfg!(target_os = "windows") {

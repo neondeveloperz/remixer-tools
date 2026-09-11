@@ -17,6 +17,8 @@ export function StemExtractor() {
   const [inputFile, setInputFile] = useState("");
   const [model, setModel] = useState("htdemucs.yaml");
   const [outputFormat, setOutputFormat] = useState("FLAC");
+  const [overlap, setOverlap] = useState("4");
+  const [segmentSize, setSegmentSize] = useState("256");
   const [useGpu, setUseGpu] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
@@ -81,7 +83,14 @@ export function StemExtractor() {
     setIsExtracting(true);
     setExtractLog([]);
     try {
-      await invoke("run_stem_extractor", { inputFile, model, outputFormat, useGpu });
+      await invoke("run_stem_extractor", { 
+        inputFile, 
+        model, 
+        outputFormat, 
+        useGpu,
+        overlap,
+        segmentSize
+      });
     } catch (e) {
       setExtractLog(prev => [...prev, `Error: ${e}`]);
       setIsExtracting(false);
@@ -146,50 +155,82 @@ export function StemExtractor() {
           </div>
         </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>AI Model</Label>
-              <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select AI Model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="htdemucs.yaml">htdemucs (Standard 4-Stems: Vocals, Drums, Bass, Other)</SelectItem>
-                  <SelectItem value="htdemucs_6s.yaml">htdemucs_6s (6-Stems: Vocals, Bass, Drums, Other, Guitar, Piano)</SelectItem>
-                  <SelectItem value="UVR_MDXNET_KARA_2.onnx">UVR MDX-Net Kara 2 (Vocal / Instrumental)</SelectItem>
-                  <SelectItem value="UVR-MDX-NET-Inst_HQ_3.onnx">UVR MDX-Net Inst HQ 3 (High Quality Instrumental)</SelectItem>
-                  <SelectItem value="Kim_Vocal_2.onnx">Kim Vocal 2 (High Quality Vocals)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Output Format</Label>
-              <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FLAC">FLAC</SelectItem>
-                  <SelectItem value="MP3">MP3</SelectItem>
-                  <SelectItem value="WAV">WAV</SelectItem>
-                  <SelectItem value="OGG">OGG</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>AI Model</Label>
+            <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select AI Model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="htdemucs.yaml">htdemucs (Standard 4-Stems)</SelectItem>
+                <SelectItem value="htdemucs_6s.yaml">htdemucs_6s (6-Stems)</SelectItem>
+                <SelectItem value="UVR_MDXNET_KARA_2.onnx">UVR MDX-Net Kara 2</SelectItem>
+                <SelectItem value="UVR-MDX-NET-Inst_HQ_3.onnx">UVR MDX-Net Inst HQ 3</SelectItem>
+                <SelectItem value="Kim_Vocal_2.onnx">Kim Vocal 2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Output Format</Label>
+            <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
+              <SelectTrigger>
+                <SelectValue placeholder="Format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FLAC">FLAC</SelectItem>
+                <SelectItem value="MP3">MP3</SelectItem>
+                <SelectItem value="WAV">WAV</SelectItem>
+                <SelectItem value="OGG">OGG</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex items-center space-x-2 py-2">
-            <Checkbox 
-              id="use-gpu" 
-              checked={useGpu} 
-              onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
-              disabled={isExtracting}
-            />
-            <Label htmlFor="use-gpu" className="font-medium cursor-pointer">
-              Enable GPU Acceleration (DirectML / CUDA)
-            </Label>
+          <div className="space-y-2">
+            <Label>Overlap</Label>
+            <Select value={overlap} onValueChange={(val) => { if (val) setOverlap(val); }} disabled={isExtracting}>
+              <SelectTrigger>
+                <SelectValue placeholder="Overlap" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 (Fast)</SelectItem>
+                <SelectItem value="4">4 (Default)</SelectItem>
+                <SelectItem value="6">6 (High Quality)</SelectItem>
+                <SelectItem value="8">8 (Higher Quality)</SelectItem>
+                <SelectItem value="10">10 (Maximum)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label>Segment</Label>
+            <Select value={segmentSize} onValueChange={(val) => { if (val) setSegmentSize(val); }} disabled={isExtracting}>
+              <SelectTrigger>
+                <SelectValue placeholder="Segment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="128">128 (Low VRAM)</SelectItem>
+                <SelectItem value="256">256 (Default)</SelectItem>
+                <SelectItem value="512">512</SelectItem>
+                <SelectItem value="768">768</SelectItem>
+                <SelectItem value="1024">1024 (Best Quality)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 py-2">
+          <Checkbox 
+            id="use-gpu" 
+            checked={useGpu} 
+            onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
+            disabled={isExtracting}
+          />
+          <Label htmlFor="use-gpu" className="font-medium cursor-pointer">
+            Enable GPU Acceleration (DirectML / CUDA)
+          </Label>
+        </div>
 
         <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="w-full">
           {isExtracting ? (
