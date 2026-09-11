@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+*.flac
+*.mp3
+*.wav
+*.ogg
+*.m4a
