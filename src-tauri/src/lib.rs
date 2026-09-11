@@ -302,9 +302,43 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             venv_dir.join("bin").join("pip")
         };
         
-        // Spawn pip and stream output
+        // 1. Uninstall CPU version of onnxruntime if it exists to prevent conflicts
+        let mut cmd_rm = std::process::Command::new(&pip_path);
+        cmd_rm.arg("uninstall").arg("-y").arg("onnxruntime");
+        let _ = cmd_rm.status();
+
+        // 2. Install PyTorch with CUDA support
+        app.emit("stem-log", "Installing PyTorch with CUDA (approx 2.5GB)...").unwrap();
+        let mut cmd_torch = std::process::Command::new(&pip_path);
+        cmd_torch.arg("install")
+                 .arg("torch").arg("torchvision").arg("torchaudio")
+                 .arg("--index-url").arg("https://download.pytorch.org/whl/cu124")
+                 .arg("--upgrade");
+        
+        let mut child_torch = cmd_torch.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
+        
+        let stdout_torch = child_torch.stdout.take().unwrap();
+        let app_torch = app.clone();
+        std::thread::spawn(move || {
+            let reader = BufReader::new(stdout_torch);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let _ = app_torch.emit("stem-log", line);
+                }
+            }
+        });
+        
+        let _ = child_torch.wait();
+
+        // 3. Install audio-separator and onnxruntime-directml
+        app.emit("stem-log", "Installing audio-separator and ONNX Runtime DirectML...").unwrap();
         let mut cmd = std::process::Command::new(&pip_path);
-        cmd.arg("install").arg("audio-separator").arg("audioread").arg("--no-warn-script-location");
+        cmd.arg("install")
+           .arg("audio-separator")
+           .arg("audioread")
+           .arg("onnxruntime-directml")
+           .arg("--upgrade")
+           .arg("--no-warn-script-location");
         
         let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
         
@@ -334,6 +368,8 @@ async fn run_stem_extractor(
     app: tauri::AppHandle,
     input_file: String,
     model: String,
+    output_format: String,
+    use_gpu: bool,
 ) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     let venv_dir = app_dir.join("venv");
@@ -362,9 +398,15 @@ async fn run_stem_extractor(
         let current_path = std::env::var("PATH").unwrap_or_default();
         let new_path = format!("{};{}", app_dir_clone.to_string_lossy(), current_path);
         cmd.env("PATH", new_path);
+        cmd.env("PYTHONUNBUFFERED", "1");
         
         cmd.arg(&input_file);
         cmd.arg("--model_filename").arg(&model);
+        cmd.arg("--output_format").arg(&output_format);
+        
+        if use_gpu {
+            cmd.arg("--use_directml");
+        }
         
         if !target_dir.is_empty() {
             cmd.arg("--output_dir").arg(&target_dir);
@@ -374,6 +416,7 @@ async fn run_stem_extractor(
             Ok(c) => c,
             Err(e) => {
                 let _ = app_clone.emit("stem-extract-log", format!("Error: {}", e));
+                let _ = app_clone.emit("stem-extract-done", false);
                 return;
             }
         };
@@ -402,6 +445,8 @@ async fn run_stem_extractor(
         
         if let Ok(status) = child.wait() {
             let _ = app_clone.emit("stem-extract-done", status.success());
+        } else {
+            let _ = app_clone.emit("stem-extract-done", false);
         }
     });
 

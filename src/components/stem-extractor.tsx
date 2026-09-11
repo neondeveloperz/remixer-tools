@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Music, FolderOpenIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FolderOpenIcon, Music, Loader2 } from "lucide-react";
 
 export function StemExtractor() {
   const [isSettingUp, setIsSettingUp] = useState(true);
@@ -14,17 +15,16 @@ export function StemExtractor() {
   const [setupLog, setSetupLog] = useState<string[]>([]);
   
   const [inputFile, setInputFile] = useState("");
-  const [model, setModel] = useState("htdemucs");
+  const [model, setModel] = useState("htdemucs.yaml");
+  const [outputFormat, setOutputFormat] = useState("FLAC");
+  const [useGpu, setUseGpu] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
 
   const setupStarted = useRef(false);
 
   useEffect(() => {
-    if (setupStarted.current) return;
-    setupStarted.current = true;
-
-    // Listen to setup logs
+    // Register listeners every time component mounts
     const unlistenSetup = listen<string>("stem-log", (event) => {
       setSetupLog(prev => [...prev, event.payload]);
       if (event.payload === "STEM Extractor is ready!") {
@@ -42,11 +42,14 @@ export function StemExtractor() {
       setExtractLog(prev => [...prev, event.payload ? "Extraction Complete!" : "Extraction Failed!"]);
     });
 
-    // Start setup check
-    invoke("setup_stem_extractor").catch(e => {
-      setSetupLog(prev => [...prev, `Error: ${e}`]);
-      setIsSettingUp(false);
-    });
+    // Start setup check only once
+    if (!setupStarted.current) {
+      setupStarted.current = true;
+      invoke("setup_stem_extractor").catch(e => {
+        setSetupLog(prev => [...prev, `Error: ${e}`]);
+        setIsSettingUp(false);
+      });
+    }
 
     return () => {
       unlistenSetup.then(fn => fn());
@@ -60,10 +63,13 @@ export function StemExtractor() {
       const { open } = await import('@tauri-apps/plugin-dialog');
       const selected = await open({
         multiple: false,
-        filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'm4a', 'ogg', 'mp4'] }]
+        filters: [{
+          name: 'Audio',
+          extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a']
+        }]
       });
-      if (selected) {
-        setInputFile(selected as string);
+      if (selected && typeof selected === 'string') {
+        setInputFile(selected);
       }
     } catch (e) {
       console.error("Failed to select file:", e);
@@ -75,7 +81,7 @@ export function StemExtractor() {
     setIsExtracting(true);
     setExtractLog([]);
     try {
-      await invoke("run_stem_extractor", { inputFile, model });
+      await invoke("run_stem_extractor", { inputFile, model, outputFormat, useGpu });
     } catch (e) {
       setExtractLog(prev => [...prev, `Error: ${e}`]);
       setIsExtracting(false);
@@ -140,20 +146,49 @@ export function StemExtractor() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>AI Model</Label>
-          <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select AI Model" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="htdemucs">htdemucs (Standard 4-Stems: Vocals, Drums, Bass, Other)</SelectItem>
-              <SelectItem value="UVR_MDXNET_KARA_2">UVR MDX-Net Kara 2 (Vocal / Instrumental)</SelectItem>
-              <SelectItem value="UVR-MDX-NET-Inst_HQ_3">UVR MDX-Net Inst HQ 3 (High Quality Instrumental)</SelectItem>
-              <SelectItem value="Kim_Vocal_2">Kim Vocal 2 (High Quality Vocals)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>AI Model</Label>
+              <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select AI Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="htdemucs.yaml">htdemucs (Standard 4-Stems: Vocals, Drums, Bass, Other)</SelectItem>
+                  <SelectItem value="UVR_MDXNET_KARA_2.onnx">UVR MDX-Net Kara 2 (Vocal / Instrumental)</SelectItem>
+                  <SelectItem value="UVR-MDX-NET-Inst_HQ_3.onnx">UVR MDX-Net Inst HQ 3 (High Quality Instrumental)</SelectItem>
+                  <SelectItem value="Kim_Vocal_2.onnx">Kim Vocal 2 (High Quality Vocals)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Output Format</Label>
+              <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FLAC">FLAC</SelectItem>
+                  <SelectItem value="MP3">MP3</SelectItem>
+                  <SelectItem value="WAV">WAV</SelectItem>
+                  <SelectItem value="OGG">OGG</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="use-gpu" 
+              checked={useGpu} 
+              onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
+              disabled={isExtracting}
+            />
+            <Label htmlFor="use-gpu" className="font-medium cursor-pointer">
+              Enable GPU Acceleration (DirectML / CUDA)
+            </Label>
+          </div>
 
         <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="w-full">
           {isExtracting ? (
