@@ -4,12 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FolderOpenIcon } from "lucide-react";
+import { FolderOpenIcon, RefreshCwIcon } from "lucide-react";
+import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 export function Settings() {
   const [downloadDir, setDownloadDir] = useState<string>("");
   const [filenameTemplate, setFilenameTemplate] = useState<string>("%(title)s.%(ext)s");
   const [isSaving, setIsSaving] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string>("");
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -50,6 +54,40 @@ export function Settings() {
       console.error("Failed to save filename template", e);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const checkForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatus("Checking...");
+    try {
+      const currentVersion = await getVersion();
+      const response = await fetch("https://api.github.com/repos/neondeveloperz/remixer-tools/releases/latest");
+      
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      
+      const data = await response.json();
+      
+      if (data.tag_name) {
+        const latestVersion = data.tag_name.replace('v', '');
+        if (latestVersion > currentVersion) {
+            setUpdateStatus(`Update available: v${latestVersion}`);
+            if (confirm(`New version v${latestVersion} is available! (Current: v${currentVersion})\n\nDo you want to go to the download page?`)) {
+                await openUrl(data.html_url);
+            }
+        } else {
+            setUpdateStatus(`You are up to date (v${currentVersion}).`);
+        }
+      } else {
+        setUpdateStatus("Could not fetch latest version.");
+      }
+    } catch (e) {
+      console.error(e);
+      setUpdateStatus("Error checking for updates.");
+    } finally {
+      setIsCheckingUpdate(false);
     }
   };
 
@@ -95,6 +133,22 @@ export function Settings() {
           </div>
           <p className="text-xs text-muted-foreground">
             Variables: <code>%(title)s</code>, <code>%(id)s</code>, <code>%(ext)s</code>, <code>%(uploader)s</code>, <code>%(resolution)s</code>
+          </p>
+        </div>
+
+        <div className="space-y-2 border-t pt-4 mt-4">
+          <Label>Updates</Label>
+          <div className="flex items-center gap-4">
+            <Button variant="secondary" onClick={checkForUpdates} disabled={isCheckingUpdate}>
+              <RefreshCwIcon className={`mr-2 h-4 w-4 ${isCheckingUpdate ? 'animate-spin' : ''}`} />
+              {isCheckingUpdate ? "Checking..." : "Check for Updates"}
+            </Button>
+            {updateStatus && (
+              <span className="text-sm font-medium text-muted-foreground">{updateStatus}</span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Check GitHub for new releases.
           </p>
         </div>
       </CardContent>
