@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Play, Pause, X, Folder, LayoutList } from "lucide-react";
+import { Loader2, Pause, X, LayoutList } from "lucide-react";
 import {
   Select,
   SelectContent,
