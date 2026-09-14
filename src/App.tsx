@@ -16,13 +16,22 @@ import { StemExtractor } from "@/components/stem-extractor"
 export default function App() {
   const [activePage, setActivePage] = useState("downloader")
   const [isReady, setIsReady] = useState(false)
+  const [isAppBusy, setIsAppBusy] = useState(false)
+
+  const handleSelectPage = (page: string) => {
+    if (isAppBusy) {
+      alert("Please wait for the installation or current operation to finish before switching pages.");
+      return;
+    }
+    setActivePage(page);
+  }
 
   const renderContent = () => {
     switch (activePage) {
       case "downloader":
         return <YtDlp />
       case "stem-extractor":
-        return <StemExtractor />
+        return <StemExtractor onBusyChange={setIsAppBusy} />
       case "settings":
         return <Settings />
       case "help":
@@ -53,7 +62,7 @@ export default function App() {
           } as CSSProperties
         }
       >
-        <AppSidebar variant="inset" activePage={activePage} onSelectPage={setActivePage} />
+        <AppSidebar variant="inset" activePage={activePage} onSelectPage={handleSelectPage} isBusy={isAppBusy} />
         <SidebarInset>
           <SiteHeader title={getPageTitle()} />
           <div className="flex flex-1 flex-col">

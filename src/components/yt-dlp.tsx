@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pause, X, LayoutList } from "lucide-react";
+import { Loader2, Pause, X, LayoutList, FolderOpen } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -151,6 +151,14 @@ export function YtDlp() {
     setDownloads(prev => prev.filter(d => d.id !== id));
   };
 
+  const openDownloadFolder = async () => {
+    try {
+      await invoke("open_download_folder");
+    } catch (e) {
+      console.error("Failed to open folder", e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="w-full">
@@ -222,9 +230,14 @@ export function YtDlp() {
       {/* Downloads List */}
       {downloads.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <LayoutList className="w-4 h-4" /> Download History
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <LayoutList className="w-4 h-4" /> Download History
+            </h3>
+            <Button variant="outline" size="sm" onClick={openDownloadFolder}>
+              <FolderOpen className="w-4 h-4 mr-2" /> Show Folders
+            </Button>
+          </div>
           {downloads.map(item => (
             <Card key={item.id} className="overflow-hidden">
               <div className="flex h-24">
@@ -271,12 +284,18 @@ export function YtDlp() {
                 
                 {/* Actions */}
                 <div className="w-16 border-l flex flex-col items-center justify-center gap-2 bg-muted/20">
-                  {item.status === 'downloading' ? (
+                  {item.status === 'downloading' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                       <Pause className="h-4 w-4" />
                     </Button>
-                  ) : (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)}>
+                  )}
+                  {item.status === 'completed' && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openDownloadFolder} title="Open Folder">
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {item.status !== 'downloading' && item.status !== 'initializing' && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)} title="Remove">
                       <X className="h-4 w-4" />
                     </Button>
                   )}
