@@ -9,9 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { FolderOpenIcon, Music, Loader2 } from "lucide-react";
 
-export function StemExtractor() {
+export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean) => void }) {
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (onBusyChange) {
+      onBusyChange(isSettingUp);
+    }
+  }, [isSettingUp, onBusyChange]);
   const [setupLog, setSetupLog] = useState<string[]>([]);
   
   const [inputFile, setInputFile] = useState("");

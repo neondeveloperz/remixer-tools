@@ -86,6 +86,22 @@ fn get_download_dir(app: tauri::AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = get_download_dir(app)?;
+    if !dir.is_empty() {
+        #[cfg(target_os = "windows")]
+        std::process::Command::new("explorer").arg(dir).spawn().map_err(|e| e.to_string())?;
+        
+        #[cfg(target_os = "macos")]
+        std::process::Command::new("open").arg(dir).spawn().map_err(|e| e.to_string())?;
+        
+        #[cfg(target_os = "linux")]
+        std::process::Command::new("xdg-open").arg(dir).spawn().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn set_download_dir(app: tauri::AppHandle, dir: String) -> Result<(), String> {
     let mut settings = get_settings(app.clone())?;
     settings.download_dir = dir;
@@ -147,7 +163,8 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
     }
 
     // Auto download ffmpeg
-    if !ffmpeg_path.exists() {
+    let needs_ffmpeg = !ffmpeg_path.exists() || std::fs::metadata(&ffmpeg_path).map(|m| m.len()).unwrap_or(0) == 0;
+    if needs_ffmpeg {
         if cfg!(target_os = "windows") {
             app.emit("setup-log", "Downloading ffmpeg (required for audio extraction and HD video)...").unwrap();
             let response = reqwest::get("https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip")
@@ -171,15 +188,24 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
             }
             app.emit("setup-log", "ffmpeg installed.").unwrap();
         } else {
-            app.emit("setup-log", "On macOS/Linux, please install ffmpeg manually (e.g., brew install ffmpeg). Skipping auto-download.").unwrap();
-            // Create a dummy file so it doesn't keep checking
-            let _ = std::fs::File::create(&ffmpeg_path);
+            app.emit("setup-log", "Downloading ffmpeg for macOS/Linux...").unwrap();
+            let target_os = if cfg!(target_os = "macos") { "darwin" } else { "linux" };
+            let target_arch = if cfg!(target_arch = "aarch64") { "arm64" } else { "x64" };
+            let url = format!("https://github.com/eugeneware/ffmpeg-static/releases/download/b5.0.1/{}-{}", target_os, target_arch);
+            
+            let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+            let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+            
+            std::fs::write(&ffmpeg_path, bytes).map_err(|e| e.to_string())?;
+            
             #[cfg(unix)]
             {
+                use std::os::unix::fs::PermissionsExt;
                 let mut perms = std::fs::metadata(&ffmpeg_path).unwrap().permissions();
                 perms.set_mode(0o755);
                 let _ = std::fs::set_permissions(&ffmpeg_path, perms);
             }
+            app.emit("setup-log", "ffmpeg installed.").unwrap();
         }
     }
 
@@ -237,6 +263,10 @@ async fn run_ytdlp(
         // Only specify ffmpeg-location if we actually downloaded a real ffmpeg
         if cfg!(target_os = "windows") {
             cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
+        } else {
+            let current_path = std::env::var("PATH").unwrap_or_default();
+            let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+            cmd.env("PATH", new_path);
         }
         
         let settings = get_settings(app_clone2).unwrap_or_default();
@@ -537,7 +567,11 @@ async fn run_stem_extractor(
         
         // Add ffmpeg to PATH so audio-separator can find it
         let current_path = std::env::var("PATH").unwrap_or_default();
+        #[cfg(target_os = "windows")]
         let new_path = format!("{};{}", app_dir_clone.to_string_lossy(), current_path);
+        #[cfg(not(target_os = "windows"))]
+        let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+        
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
         
@@ -662,7 +696,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(external_navigation_plugin())
-        .invoke_handler(tauri::generate_handler![greet, run_ytdlp, get_download_dir, set_download_dir, set_filename_template, get_settings, setup_dependencies, get_video_info, setup_stem_extractor, run_stem_extractor])
+        .invoke_handler(tauri::generate_handler![greet, run_ytdlp, get_download_dir, open_download_folder, set_download_dir, set_filename_template, get_settings, setup_dependencies, get_video_info, setup_stem_extractor, run_stem_extractor])
         .on_page_load(|webview, payload| {
             if webview.label() == "main" && matches!(payload.event(), PageLoadEvent::Finished) {
                 log::info!("main webview finished loading");

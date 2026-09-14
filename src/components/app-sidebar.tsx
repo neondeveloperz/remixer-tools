@@ -57,9 +57,10 @@ const data = {
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   activePage?: string;
   onSelectPage?: (page: string) => void;
+  isBusy?: boolean;
 };
 
-export function AppSidebar({ activePage, onSelectPage, ...props }: AppSidebarProps) {
+export function AppSidebar({ activePage, onSelectPage, isBusy, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -75,7 +76,7 @@ export function AppSidebar({ activePage, onSelectPage, ...props }: AppSidebarPro
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className={isBusy ? "opacity-50 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}>
         <NavMain items={data.navMain} activeItem={activePage} onSelectItem={onSelectPage} />
         <NavSecondary items={data.navSecondary} activeItem={activePage} onSelectItem={onSelectPage} className="mt-auto" />
       </SidebarContent>
