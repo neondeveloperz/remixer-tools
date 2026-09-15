@@ -57,6 +57,15 @@ async fn download_file_with_progress(
                     progress: percent,
                 });
             }
+        } else {
+            let percent = std::cmp::min((downloaded / 500_000) as u8, 99);
+            if percent > last_percent {
+                last_percent = percent;
+                let _ = app.emit("setup-progress", ProgressPayload {
+                    item: item_name.to_string(),
+                    progress: percent,
+                });
+            }
         }
     }
     
@@ -316,7 +325,7 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
 
             if cfg!(target_os = "macos") {
                 app.emit("setup-log", "Downloading ffprobe for macOS...").unwrap();
-                let ffprobe_url = "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip";
+                let ffprobe_url = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-macos-64.zip";
                 match download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
                     Ok(bytes) => {
                         match zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
