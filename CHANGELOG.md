@@ -2,18 +2,25 @@
 
 ## 🚀 What's New in v0.3.0
 
-This update introduces a brand new, highly requested music player UI and improves the user experience for STEM Extraction!
+This major update introduces the **AI Model Store**, a brand new **Global Stem Player UI**, theme customization (Light & Dark modes), and extensive cross-platform performance enhancements for macOS and Windows!
 
 ### ✨ Features & Enhancements
-- **Global Stem Player:** The music player has been completely redesigned into a sleek, persistent bottom bar (Spotify-style) that is accessible from anywhere in the app.
-- **Auto-Play Support:** Playing a track or loading STEMs will now automatically start playback immediately.
-- **Media Keys Support:** You can now use your keyboard's native Play/Pause media keys or your headset controls to pause and resume playback seamlessly.
-- **Drag and Drop (STEM Extractor):** You can now intuitively drag and drop audio files (MP3, WAV, FLAC, M4A, OGG) directly onto the STEM Extractor screen to load them.
+- **AI Model Store:** A built-in marketplace and manager for AI separation models. Easily browse, search, and download state-of-the-art models (Demucs, RoFormer, MDX-Net, VR Arch) with detailed descriptions, architecture tags, and download sizes directly inside the app.
+- **Global Stem Player:** Redesigned the music player into a sleek, persistent bottom bar (Spotify-style) accessible across all pages with multi-track volume and mute/solo controls.
+- **Auto-Play & Media Keys:** Loading or playing tracks now auto-starts playback smoothly, with support for native keyboard media keys and headset controls (Play/Pause).
+- **Theme Switching (Light / Dark Mode):** Added an intuitive theme toggle in the header and Settings page, featuring a refined default light theme alongside the sleek dark mode.
+- **Drag and Drop (STEM Extractor):** Quickly load audio files (MP3, WAV, FLAC, M4A, OGG) by dragging and dropping them directly into the STEM Extractor workspace.
+- **Apple Silicon & Hardware Acceleration:** Automated PyTorch MPS and CoreML environment configurations for optimized AI inference on Apple Silicon (M-series chips).
+- **Automated macOS Tooling:** Integrated automatic download and configuration of `ffprobe` alongside `ffmpeg` on macOS during initial setup.
+- **Window Resizing & Tab State Preservation:** Enabled window resizing with responsive layout adaptation, and preserved screen states when switching between sidebar tabs.
 
 ### 🛠 Fixes & Stability
-- **Audio Overlap Bug:** Fixed an issue where multiple old tracks would play simultaneously when switching back and forth between songs.
-- **Scroll Overlap Fix:** Ensured that the new persistent player does not block content at the bottom of the main window or the sidebar.
-- **Seek Bar Smoothing:** Fixed stuttering issues when dragging the progress bar by implementing drag commit logic.
+- **Audio Overlap Bug:** Fixed an issue where audio buffers could overlap when rapidly switching between tracks in the player.
+- **Seek Bar Smoothing:** Implemented drag commit logic on the progress slider to eliminate stuttering during seeking.
+- **Select Dropdown Positioning:** Corrected dropdown menu positioning across the app so options open cleanly below triggers without overlaying inputs.
+- **Resilient File Downloader:** Enhanced downloads with explicit User-Agent headers, HTTP status verification, and fallback progress calculations for unknown content lengths.
+- **Unix PATH Resolution:** Ensured app binaries and FFmpeg locations are correctly prepended to PATH on macOS and Linux systems.
+- **Layout & Scroll Overlap:** Prevented the bottom player bar from clipping main content or navigation views.
 
 ---
 See the assets below to download this version.
