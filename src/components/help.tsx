@@ -1,9 +1,17 @@
+import { useState, useEffect } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Help() {
+  const [version, setVersion] = useState("0.3.1");
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <Card>
@@ -58,7 +66,7 @@ export function Help() {
             <AccordionItem value="item-5">
               <AccordionTrigger>What is STEM Extractor?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">
-                <p>The STEM Extractor is an upcoming feature that will allow you to separate a song into individual tracks (vocals, bass, drums, and other instruments). This feature is currently in development!</p>
+                <p>The STEM Extractor allows you to separate audio into individual tracks (vocals, drums, bass, instrumental, etc.) powered by state-of-the-art AI models, complete with a synchronized multi-track mixer.</p>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -68,7 +76,7 @@ export function Help() {
       <Card>
         <CardHeader>
           <CardTitle>About Remixer Tools</CardTitle>
-          <CardDescription>Version 1.0.0</CardDescription>
+          <CardDescription>Version {version}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">

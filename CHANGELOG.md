@@ -1,6 +1,32 @@
 # Changelog
 
-## 🚀 What's New in v0.3.0
+## 🚀 What's New in v0.3.1
+
+This update brings **massive RAM & memory optimizations** to the STEM Extractor engine, introduces the dedicated **STEM Mixer Studio** powered by the Web Audio API for drift-free multi-track audio playback, and provides seamless post-separation workflow integration!
+
+### ✨ Features & Enhancements
+- **STEM Extractor RAM & Memory Optimization:**
+  - **Memory Saver Mode:** Added a one-click Memory Saver toggle (enabled by default) that optimizes segment sizes and overrides model configs to prevent memory spikes.
+  - **DirectML Acceleration & Memory Patch:** Automatically applies DirectML patches on Windows to eliminate memory leaks and crashes on AMD, Intel, and NVIDIA GPUs.
+  - **Demucs RAM Spikes Fixed:** Prevented Demucs shift-multiplication and aligned segment duration to seconds rather than FFT frames, cutting Demucs RAM usage by up to 75%.
+  - **PyTorch Memory Fragmentation Guard:** Configured `expandable_segments:True` and enforced batch size 1 across all architectures.
+  - **Thread Explosion Prevention:** Restricted CPU thread pools across BLAS/MKL/OpenMP runtimes to prevent CPU exhaustion on multi-core systems.
+- **STEM Mixer Studio:**
+  - **Dedicated Studio Page:** Separated the STEM mixer into its own full-page workspace (`STEM Mixer Studio`) accessible directly from the sidebar.
+  - **Auto-Open on Extraction:** Seamlessly navigates to the STEM Mixer Studio with newly separated stems loaded automatically once extraction finishes.
+  - **Web Audio Synchronization Engine:** Hardware-clock synchronized multi-track playback ensuring vocal, drums, bass, and instrument stems stay in lockstep without audio drift.
+  - **DAW-Style Track Mixer:** Professional track channel strips featuring real-time interactive waveforms, volume faders, dB meters, pan controls, and individual Solo / Mute states.
+  - **Manual Stem Import:** Directly import multiple external stem audio files into the studio at any time.
+
+### 🛠 Fixes & Stability
+- **Audio Desynchronization & Solo/Mute Bugs:** Replaced fragmented HTML5 audio elements with unified Web Audio API nodes, fixing playback sync issues and solo functionality across heterogeneous models.
+- **Drag-and-Drop Reliability:** Improved audio file drag-and-drop feedback in the STEM Extractor.
+
+---
+See the assets below to download this version.
+The Windows portable executable requires the Microsoft Edge WebView2 Runtime.
+
+**Full Changelog**: https://github.com/neondeveloperz/remixer-tools/compare/v0.3.0...v0.3.1
 
 This major update introduces the **AI Model Store**, a brand new **Global Stem Player UI**, theme customization (Light & Dark modes), and extensive cross-platform performance enhancements for macOS and Windows!
 

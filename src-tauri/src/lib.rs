@@ -112,18 +112,25 @@ fn get_settings_path(app: &tauri::AppHandle) -> std::path::PathBuf {
 
 #[tauri::command]
 fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
+    let default_base_dir = if let Ok(path) = app.path().download_dir() {
+        path.join("remixer-tools").to_string_lossy().to_string()
+    } else {
+        std::env::current_dir()
+            .unwrap_or_default()
+            .join("remixer-tools")
+            .to_string_lossy()
+            .to_string()
+    };
+
     let settings_path = get_settings_path(&app);
-    if let Ok(content) = std::fs::read_to_string(settings_path) {
+    if let Ok(content) = std::fs::read_to_string(&settings_path) {
         if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
             return Ok(settings);
         }
     }
 
-    // Default
     let mut default_settings = AppSettings::default();
-    if let Ok(path) = app.path().download_dir() {
-        default_settings.download_dir = path.to_string_lossy().to_string();
-    }
+    default_settings.download_dir = default_base_dir;
     default_settings.filename_template = Some("%(title)s.%(ext)s".to_string());
 
     Ok(default_settings)
@@ -179,21 +186,21 @@ fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
         #[cfg(target_os = "windows")]
         std::process::Command::new("explorer")
             .hide_window()
-            .arg(dir)
+            .arg(&dir)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "macos")]
         std::process::Command::new("open")
             .hide_window()
-            .arg(dir)
+            .arg(&dir)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "linux")]
         std::process::Command::new("xdg-open")
             .hide_window()
-            .arg(dir)
+            .arg(&dir)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -821,6 +828,13 @@ except Exception:
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StemExtractResult {
+    pub success: bool,
+    pub input_file: String,
+    pub output_files: Vec<String>,
+}
+
 #[tauri::command]
 async fn run_stem_extractor(
     app: tauri::AppHandle,
@@ -866,6 +880,19 @@ async fn run_stem_extractor(
     let app_dir_clone = app_dir.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
+        let start_time = std::time::SystemTime::now();
+        let out_dir = if target_dir.is_empty() {
+            std::env::current_dir().unwrap_or_default()
+        } else {
+            std::path::PathBuf::from(&target_dir)
+        };
+        let input_file_path = std::path::PathBuf::from(&input_file);
+        let input_stem = input_file_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_string();
+
         let mut cmd = std::process::Command::new(&separator_path).hide_window();
 
         // Add ffmpeg to PATH so audio-separator can find it
@@ -1004,12 +1031,30 @@ async fn run_stem_extractor(
             }
         };
 
+        let logged_files: std::sync::Arc<std::sync::Mutex<Vec<String>>> =
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let logged_files_out = logged_files.clone();
+        let logged_files_err = logged_files.clone();
+
         let stdout = child.stdout.take().unwrap();
         let app_stdout = app_clone.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
+                    if let Some(pos) = line.find("Exported audio file successfully to ") {
+                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                        let file_path = if let Some(idx) = rest.find(" with ") {
+                            rest[..idx].trim()
+                        } else {
+                            rest.trim()
+                        };
+                        if !file_path.is_empty() {
+                            if let Ok(mut list) = logged_files_out.lock() {
+                                list.push(file_path.to_string());
+                            }
+                        }
+                    }
                     let _ = app_stdout.emit("stem-extract-log", line);
                 }
             }
@@ -1021,16 +1066,79 @@ async fn run_stem_extractor(
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
+                    if let Some(pos) = line.find("Exported audio file successfully to ") {
+                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                        let file_path = if let Some(idx) = rest.find(" with ") {
+                            rest[..idx].trim()
+                        } else {
+                            rest.trim()
+                        };
+                        if !file_path.is_empty() {
+                            if let Ok(mut list) = logged_files_err.lock() {
+                                list.push(file_path.to_string());
+                            }
+                        }
+                    }
                     let _ = app_stderr.emit("stem-extract-log", line);
                 }
             }
         });
 
-        if let Ok(status) = child.wait() {
-            let _ = app_clone.emit("stem-extract-done", status.success());
-        } else {
-            let _ = app_clone.emit("stem-extract-done", false);
+        let success = match child.wait() {
+            Ok(status) => status.success(),
+            Err(_) => false,
+        };
+
+        let mut output_files: Vec<String> = Vec::new();
+
+        if success {
+            if let Ok(list) = logged_files.lock() {
+                for path_str in list.iter() {
+                    let p = std::path::PathBuf::from(path_str);
+                    if p.exists() {
+                        let canonical = p.to_string_lossy().to_string();
+                        if !output_files.contains(&canonical) {
+                            output_files.push(canonical);
+                        }
+                    }
+                }
+            }
+
+            if let Ok(entries) = std::fs::read_dir(&out_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Ok(metadata) = path.metadata() {
+                            let is_recent = metadata.modified().map(|m| {
+                                m >= start_time - std::time::Duration::from_secs(15)
+                            }).unwrap_or(false);
+
+                            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                            let is_audio = matches!(ext.as_str(), "flac" | "wav" | "mp3" | "ogg" | "m4a");
+
+                            if is_audio && is_recent && (name.starts_with(&input_stem) || (name.contains("_(") && name.contains(")_"))) {
+                                let full_str = path.to_string_lossy().to_string();
+                                if !output_files.contains(&full_str) {
+                                    output_files.push(full_str);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            output_files.sort();
         }
+
+        let result = StemExtractResult {
+            success,
+            input_file: input_file.clone(),
+            output_files,
+        };
+
+        let _ = app_clone.emit("stem-extract-result", result);
+        let _ = app_clone.emit("stem-extract-done", success);
     });
 
     Ok(())
