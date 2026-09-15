@@ -384,15 +384,31 @@ fn list_storage_files(app: tauri::AppHandle) -> Result<Vec<StorageFileItem>, Str
                             .unwrap_or(0);
                         let full_path_str = p.to_string_lossy().to_string();
                         if !items.iter().any(|existing| existing.path == full_path_str) {
+                            let is_stem = name.contains("_(") && name.contains(")_");
+                            let (category, stem_type, parent_group) = if is_stem {
+                                let st = name.rfind("_(").and_then(|start| {
+                                    let after = &name[start + 2..];
+                                    after.find(')').map(|end| after[..end].to_string())
+                                });
+                                let pg = if let Some(idx) = name.rfind("_(") {
+                                    Some(name[..idx].to_string())
+                                } else {
+                                    Some(name.clone())
+                                };
+                                ("stem".to_string(), st, pg)
+                            } else {
+                                ("download".to_string(), None, None)
+                            };
+
                             items.push(StorageFileItem {
                                 name,
                                 path: full_path_str,
                                 size_bytes,
                                 modified_time,
-                                category: "download".to_string(),
+                                category,
                                 extension: ext,
-                                stem_type: None,
-                                parent_group: None,
+                                stem_type,
+                                parent_group,
                             });
                         }
                     }
@@ -627,9 +643,10 @@ async fn run_ytdlp(
     tauri::async_runtime::spawn_blocking(move || {
         let mut cmd = std::process::Command::new(&ytdlp_path).hide_window();
 
-        // Change working directory to target_dir so files are saved there
+        // Change working directory and pass -P to target_dir so files are saved there
         if !target_dir_clone.is_empty() {
             cmd.current_dir(&target_dir_clone);
+            cmd.arg("-P").arg(&target_dir_clone);
         }
 
         // Use JSON progress template for easier frontend parsing
@@ -688,7 +705,7 @@ async fn run_ytdlp(
 
         let app_stdout = app_clone.clone();
         let id_stdout = id_clone.clone();
-        std::thread::spawn(move || {
+        let h_out = std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
@@ -757,7 +774,7 @@ async fn run_ytdlp(
         });
 
         let app_stderr = app_clone.clone();
-        std::thread::spawn(move || {
+        let h_err = std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
@@ -766,9 +783,10 @@ async fn run_ytdlp(
             }
         });
 
-        if let Ok(_status) = child.wait() {
-            let _ = app_clone.emit("ytdlp-done", id_clone);
-        }
+        let _ = child.wait();
+        let _ = h_out.join();
+        let _ = h_err.join();
+        let _ = app_clone.emit("ytdlp-done", id_clone);
     });
 
     Ok(())

@@ -100,7 +100,7 @@ function AppContent() {
                       isActive={activePage === "library"}
                       onSendToExtractor={handleSendToExtractor}
                       onNavigateToDownloader={() => setActivePage("downloader")}
-                      onNavigateToExtractor={() => setActivePage("stem-mixer")}
+                      onNavigateToMixer={() => setActivePage("stem-mixer")}
                     />
                   </div>
                   <div className={activePage === "model-store" ? "block" : "hidden"}>

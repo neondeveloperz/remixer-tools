@@ -63,6 +63,7 @@ interface SavedDownloadMetadata {
 interface LibraryDashboardProps {
   onSendToExtractor?: (filePath: string) => void;
   onNavigateToDownloader?: () => void;
+  onNavigateToMixer?: () => void;
   onNavigateToExtractor?: () => void;
   isActive?: boolean;
 }
@@ -70,9 +71,11 @@ interface LibraryDashboardProps {
 export function LibraryDashboard({
   onSendToExtractor,
   onNavigateToDownloader,
+  onNavigateToMixer,
   onNavigateToExtractor,
   isActive = true,
 }: LibraryDashboardProps) {
+  const navigateToMixer = onNavigateToMixer || onNavigateToExtractor;
   const player = usePlayer();
   const [files, setFiles] = useState<StorageFileItem[]>([]);
   const [dirs, setDirs] = useState<StorageDirs | null>(null);
@@ -97,6 +100,9 @@ export function LibraryDashboard({
             if (item.filepath) {
               const filename = item.filepath.split(/[/\\]/).pop() || "";
               map[filename] = item;
+            }
+            if (item.title) {
+              map[item.title] = item;
             }
           });
           setDownloadMeta(map);
@@ -137,6 +143,10 @@ export function LibraryDashboard({
     const unlistenYt = listen("ytdlp-done", () => {
       loadFiles(true);
       loadSavedMeta();
+      setTimeout(() => {
+        loadFiles(true);
+        loadSavedMeta();
+      }, 1200);
     });
     const unlistenPath = listen("ytdlp-filepath", () => {
       loadFiles(true);
@@ -144,9 +154,11 @@ export function LibraryDashboard({
     });
     const unlistenStemDone = listen("stem-extract-done", () => {
       loadFiles(true);
+      setTimeout(() => loadFiles(true), 1200);
     });
     const unlistenStemRes = listen("stem-extract-result", () => {
       loadFiles(true);
+      setTimeout(() => loadFiles(true), 1200);
     });
 
     const handleFocus = () => {
@@ -531,7 +543,7 @@ export function LibraryDashboard({
                       size="sm"
                       onClick={() => {
                         handlePlayStemGroup(groupTitle, stemItems);
-                        onNavigateToExtractor?.();
+                        navigateToMixer?.();
                       }}
                       className="gap-1.5 font-semibold"
                     >
@@ -611,7 +623,8 @@ export function LibraryDashboard({
           {filteredFiles.map((file) => {
             const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
             const isStem = file.category === "stem";
-            const meta = downloadMeta[file.name];
+            const baseName = file.name.replace(/\.[^/.]+$/, "");
+            const meta = downloadMeta[file.name] || downloadMeta[baseName];
             const badgeStyle = isStem ? getStemBadgeStyle(file.stem_type) : "";
 
             return (
