@@ -830,7 +830,7 @@ async fn run_stem_extractor(
         #[cfg(target_os = "windows")]
         let new_path = format!("{};{}", app_dir_clone.to_string_lossy(), current_path);
         #[cfg(not(target_os = "windows"))]
-        let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+        let new_path = format!("{}:{}:/opt/homebrew/bin:/usr/local/bin", app_dir_clone.to_string_lossy(), current_path);
 
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
