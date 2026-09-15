@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon } from "lucide-react"
+import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon } from "lucide-react"
 import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
@@ -32,6 +32,13 @@ const data = {
       id: "stem-extractor",
       icon: (
         <MusicIcon />
+      ),
+    },
+    {
+      title: "Model Store",
+      id: "model-store",
+      icon: (
+        <StoreIcon />
       ),
     }
   ],

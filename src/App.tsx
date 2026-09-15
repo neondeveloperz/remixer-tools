@@ -12,6 +12,7 @@ import { Settings } from "@/components/settings"
 import { DependencyCheck } from "@/components/dependency-check"
 import { Help } from "@/components/help"
 import { StemExtractor } from "@/components/stem-extractor"
+import { ModelStore } from "@/components/model-store"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
 
@@ -20,6 +21,7 @@ function AppContent() {
   const [activePage, setActivePage] = useState("downloader")
   const [isReady, setIsReady] = useState(false)
   const [isAppBusy, setIsAppBusy] = useState(false)
+  const [selectedModel, setSelectedModel] = useState("htdemucs.yaml")
 
   const handleSelectPage = (page: string) => {
     if (isAppBusy) {
@@ -29,12 +31,16 @@ function AppContent() {
     setActivePage(page);
   }
 
-
+  const handleSelectModelForExtraction = (modelFilename: string) => {
+    setSelectedModel(modelFilename);
+    setActivePage("stem-extractor");
+  }
 
   const getPageTitle = () => {
     switch (activePage) {
       case "downloader": return "Video Downloader"
       case "stem-extractor": return "STEM Extractor"
+      case "model-store": return "AI Model Store"
       case "settings": return "Settings"
       case "help": return "Help & Documentation"
       default: return "Remixer Tools"
@@ -64,7 +70,15 @@ function AppContent() {
                     <YtDlp />
                   </div>
                   <div className={activePage === "stem-extractor" ? "block" : "hidden"}>
-                    <StemExtractor onBusyChange={setIsAppBusy} />
+                    <StemExtractor
+                      onBusyChange={setIsAppBusy}
+                      selectedModel={selectedModel}
+                      onModelChange={setSelectedModel}
+                      onNavigateToModelStore={() => setActivePage("model-store")}
+                    />
+                  </div>
+                  <div className={activePage === "model-store" ? "block" : "hidden"}>
+                    <ModelStore onSelectModelForExtraction={handleSelectModelForExtraction} />
                   </div>
                   <div className={activePage === "settings" ? "block" : "hidden"}>
                     <Settings />

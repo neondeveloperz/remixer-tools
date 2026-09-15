@@ -1,0 +1,3097 @@
+[
+  {
+    "filename": "1_HP-UVR.pth",
+    "name": "VR Arch Single Model v5: 1_HP-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.7,
+      "vocals": 7.9
+    },
+    "download_files": [
+      "1_HP-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "2_HP-UVR.pth",
+    "name": "VR Arch Single Model v5: 2_HP-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.5,
+      "vocals": 8.2
+    },
+    "download_files": [
+      "2_HP-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "3_HP-Vocal-UVR.pth",
+    "name": "VR Arch Single Model v5: 3_HP-Vocal-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.2,
+      "instrumental": 14.0
+    },
+    "download_files": [
+      "3_HP-Vocal-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "4_HP-Vocal-UVR.pth",
+    "name": "VR Arch Single Model v5: 4_HP-Vocal-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.3,
+      "instrumental": 13.6
+    },
+    "download_files": [
+      "4_HP-Vocal-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "5_HP-Karaoke-UVR.pth",
+    "name": "VR Arch Single Model v5: 5_HP-Karaoke-UVR",
+    "type": "VR",
+    "category": "karaoke",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 12.2,
+      "vocals": 5.2
+    },
+    "download_files": [
+      "5_HP-Karaoke-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "6_HP-Karaoke-UVR.pth",
+    "name": "VR Arch Single Model v5: 6_HP-Karaoke-UVR",
+    "type": "VR",
+    "category": "karaoke",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.0,
+      "vocals": 4.6
+    },
+    "download_files": [
+      "6_HP-Karaoke-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "7_HP2-UVR.pth",
+    "name": "VR Arch Single Model v5: 7_HP2-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.5,
+      "vocals": 8.3
+    },
+    "download_files": [
+      "7_HP2-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "8_HP2-UVR.pth",
+    "name": "VR Arch Single Model v5: 8_HP2-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.5,
+      "vocals": 8.2
+    },
+    "download_files": [
+      "8_HP2-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "9_HP2-UVR.pth",
+    "name": "VR Arch Single Model v5: 9_HP2-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.7,
+      "vocals": 8.0
+    },
+    "download_files": [
+      "9_HP2-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "10_SP-UVR-2B-32000-1.pth",
+    "name": "VR Arch Single Model v5: 10_SP-UVR-2B-32000-1",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.3,
+      "vocals": 7.5
+    },
+    "download_files": [
+      "10_SP-UVR-2B-32000-1.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "11_SP-UVR-2B-32000-2.pth",
+    "name": "VR Arch Single Model v5: 11_SP-UVR-2B-32000-2",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.8,
+      "vocals": 7.3
+    },
+    "download_files": [
+      "11_SP-UVR-2B-32000-2.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "12_SP-UVR-3B-44100.pth",
+    "name": "VR Arch Single Model v5: 12_SP-UVR-3B-44100",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.1,
+      "vocals": 7.5
+    },
+    "download_files": [
+      "12_SP-UVR-3B-44100.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "13_SP-UVR-4B-44100-1.pth",
+    "name": "VR Arch Single Model v5: 13_SP-UVR-4B-44100-1",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.3,
+      "vocals": 7.8
+    },
+    "download_files": [
+      "13_SP-UVR-4B-44100-1.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "14_SP-UVR-4B-44100-2.pth",
+    "name": "VR Arch Single Model v5: 14_SP-UVR-4B-44100-2",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.5,
+      "vocals": 8.0
+    },
+    "download_files": [
+      "14_SP-UVR-4B-44100-2.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "15_SP-UVR-MID-44100-1.pth",
+    "name": "VR Arch Single Model v5: 15_SP-UVR-MID-44100-1",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.1,
+      "vocals": 7.5
+    },
+    "download_files": [
+      "15_SP-UVR-MID-44100-1.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "16_SP-UVR-MID-44100-2.pth",
+    "name": "VR Arch Single Model v5: 16_SP-UVR-MID-44100-2",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.3,
+      "vocals": 7.4
+    },
+    "download_files": [
+      "16_SP-UVR-MID-44100-2.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "17_HP-Wind_Inst-UVR.pth",
+    "name": "VR Arch Single Model v5: 17_HP-Wind_Inst-UVR",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "no woodwinds",
+      "woodwinds"
+    ],
+    "target_stem": "no woodwinds",
+    "sdr": {
+      "no woodwinds": null,
+      "woodwinds": null
+    },
+    "download_files": [
+      "17_HP-Wind_Inst-UVR.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-De-Echo-Aggressive.pth",
+    "name": "VR Arch Single Model v5: UVR-De-Echo-Aggressive by FoxJoy",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "no echo",
+      "echo"
+    ],
+    "target_stem": "no echo",
+    "sdr": {
+      "no echo": null,
+      "echo": null
+    },
+    "download_files": [
+      "UVR-De-Echo-Aggressive.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-De-Echo-Normal.pth",
+    "name": "VR Arch Single Model v5: UVR-De-Echo-Normal by FoxJoy",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "no echo",
+      "echo"
+    ],
+    "target_stem": "no echo",
+    "sdr": {
+      "no echo": null,
+      "echo": null
+    },
+    "download_files": [
+      "UVR-De-Echo-Normal.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-DeEcho-DeReverb.pth",
+    "name": "VR Arch Single Model v5: UVR-DeEcho-DeReverb by FoxJoy",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "no reverb",
+      "reverb"
+    ],
+    "target_stem": "no reverb",
+    "sdr": {
+      "no reverb": null,
+      "reverb": null
+    },
+    "download_files": [
+      "UVR-DeEcho-DeReverb.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-DeNoise-Lite.pth",
+    "name": "VR Arch Single Model v5: UVR-DeNoise-Lite by FoxJoy",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "noise",
+      "no noise"
+    ],
+    "target_stem": "noise",
+    "sdr": {
+      "noise": null,
+      "no noise": null
+    },
+    "download_files": [
+      "UVR-DeNoise-Lite.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-DeNoise.pth",
+    "name": "VR Arch Single Model v5: UVR-DeNoise by FoxJoy",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "noise",
+      "no noise"
+    ],
+    "target_stem": "noise",
+    "sdr": {
+      "noise": null,
+      "no noise": null
+    },
+    "download_files": [
+      "UVR-DeNoise.pth"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "UVR-BVE-4B_SN-44100-1.pth",
+    "name": "VR Arch Single Model v5: UVR-BVE-4B_SN-44100-1",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 0.0,
+      "instrumental": 7.7
+    },
+    "download_files": [
+      "UVR-BVE-4B_SN-44100-1.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MGM_HIGHEND_v4.pth",
+    "name": "VR Arch Single Model v4: MGM_HIGHEND_v4",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 12.3,
+      "vocals": 6.9
+    },
+    "download_files": [
+      "MGM_HIGHEND_v4.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MGM_LOWEND_A_v4.pth",
+    "name": "VR Arch Single Model v4: MGM_LOWEND_A_v4",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.0,
+      "vocals": 7.0
+    },
+    "download_files": [
+      "MGM_LOWEND_A_v4.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MGM_LOWEND_B_v4.pth",
+    "name": "VR Arch Single Model v4: MGM_LOWEND_B_v4",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.1,
+      "vocals": 7.5
+    },
+    "download_files": [
+      "MGM_LOWEND_B_v4.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MGM_MAIN_v4.pth",
+    "name": "VR Arch Single Model v4: MGM_MAIN_v4",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 12.4,
+      "vocals": 6.2
+    },
+    "download_files": [
+      "MGM_MAIN_v4.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-De-Reverb-aufr33-jarredou.pth",
+    "name": "VR Arch Single Model v4: UVR-De-Reverb by aufr33-jarredou",
+    "type": "VR",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "no dry"
+    ],
+    "target_stem": "dry",
+    "sdr": {
+      "dry": null,
+      "no dry": null
+    },
+    "download_files": [
+      "UVR-De-Reverb-aufr33-jarredou.pth"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "UVR-BVE-4B_SN-44100-2.pth",
+    "name": "VR Arch Single Model v5: UVR-BVE-4B_SN-44100-2",
+    "type": "VR",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "UVR-BVE-4B_SN-44100-2.pth"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_HQ_1.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst HQ 1",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.4,
+      "vocals": 8.8
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_HQ_1.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_HQ_2.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst HQ 2",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.3,
+      "vocals": 8.8
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_HQ_2.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_HQ_3.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst HQ 3",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.4,
+      "vocals": 8.8
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_HQ_3.onnx"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_HQ_4.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst HQ 4",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.5,
+      "vocals": 8.8
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_HQ_4.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_HQ_5.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst HQ 5",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.3,
+      "vocals": 8.7
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_HQ_5.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_Main.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Main",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.2,
+      "instrumental": 15.4
+    },
+    "download_files": [
+      "UVR_MDXNET_Main.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_Main.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst Main",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.1,
+      "vocals": 8.5
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_Main.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_1_9703.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET 1",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.6,
+      "instrumental": 15.0
+    },
+    "download_files": [
+      "UVR_MDXNET_1_9703.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_2_9682.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET 2",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.4,
+      "instrumental": 15.0
+    },
+    "download_files": [
+      "UVR_MDXNET_2_9682.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_3_9662.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET 3",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.7,
+      "instrumental": 15.0
+    },
+    "download_files": [
+      "UVR_MDXNET_3_9662.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_1.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst 1",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.2,
+      "vocals": 9.2
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_1.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_2.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst 2",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.3,
+      "vocals": 9.2
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_2.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_3.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Inst 3",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.3,
+      "vocals": 9.2
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_3.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_KARA.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Karaoke",
+    "type": "MDX",
+    "category": "karaoke",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 5.6,
+      "instrumental": 14.1
+    },
+    "download_files": [
+      "UVR_MDXNET_KARA.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR_MDXNET_KARA_2.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Karaoke 2",
+    "type": "MDX",
+    "category": "karaoke",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 14.8,
+      "vocals": 5.4
+    },
+    "download_files": [
+      "UVR_MDXNET_KARA_2.onnx"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "UVR_MDXNET_9482.onnx",
+    "name": "MDX-Net Model: UVR_MDXNET_9482",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.3,
+      "instrumental": 14.9
+    },
+    "download_files": [
+      "UVR_MDXNET_9482.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Voc_FT.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Voc FT",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.2,
+      "instrumental": 15.4
+    },
+    "download_files": [
+      "UVR-MDX-NET-Voc_FT.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "Kim_Vocal_1.onnx",
+    "name": "MDX-Net Model: Kim Vocal 1",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.1,
+      "instrumental": 15.5
+    },
+    "download_files": [
+      "Kim_Vocal_1.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "Kim_Vocal_2.onnx",
+    "name": "MDX-Net Model: Kim Vocal 2",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.2,
+      "instrumental": 15.4
+    },
+    "download_files": [
+      "Kim_Vocal_2.onnx"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "Kim_Inst.onnx",
+    "name": "MDX-Net Model: Kim Inst",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.5,
+      "vocals": 9.1
+    },
+    "download_files": [
+      "Kim_Inst.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "Reverb_HQ_By_FoxJoy.onnx",
+    "name": "MDX-Net Model: Reverb HQ By FoxJoy",
+    "type": "MDX",
+    "category": "cleanup",
+    "stems": [
+      "reverb",
+      "no reverb"
+    ],
+    "target_stem": "reverb",
+    "sdr": {
+      "reverb": null,
+      "no reverb": null
+    },
+    "download_files": [
+      "Reverb_HQ_By_FoxJoy.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Crowd_HQ_1.onnx",
+    "name": "MDX-Net Model: UVR-MDX-NET Crowd HQ 1 By Aufr33",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "no crowd",
+      "crowd"
+    ],
+    "target_stem": "no crowd",
+    "sdr": {
+      "no crowd": null,
+      "crowd": null
+    },
+    "download_files": [
+      "UVR-MDX-NET_Crowd_HQ_1.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_a_vocals.onnx",
+    "name": "MDX-Net Model: kuielab_a_vocals",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.6,
+      "instrumental": 15.3
+    },
+    "download_files": [
+      "kuielab_a_vocals.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_a_other.onnx",
+    "name": "MDX-Net Model: kuielab_a_other",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "other",
+      "no other"
+    ],
+    "target_stem": "other",
+    "sdr": {
+      "other": null,
+      "no other": null
+    },
+    "download_files": [
+      "kuielab_a_other.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_a_bass.onnx",
+    "name": "MDX-Net Model: kuielab_a_bass",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "bass",
+      "no bass"
+    ],
+    "target_stem": "bass",
+    "sdr": {
+      "bass": 10.4,
+      "no bass": null
+    },
+    "download_files": [
+      "kuielab_a_bass.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_a_drums.onnx",
+    "name": "MDX-Net Model: kuielab_a_drums",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "drums",
+      "no drums"
+    ],
+    "target_stem": "drums",
+    "sdr": {
+      "drums": 7.0,
+      "no drums": null
+    },
+    "download_files": [
+      "kuielab_a_drums.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_b_vocals.onnx",
+    "name": "MDX-Net Model: kuielab_b_vocals",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.0,
+      "instrumental": 15.1
+    },
+    "download_files": [
+      "kuielab_b_vocals.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_b_other.onnx",
+    "name": "MDX-Net Model: kuielab_b_other",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "other",
+      "no other"
+    ],
+    "target_stem": "other",
+    "sdr": {
+      "other": null,
+      "no other": null
+    },
+    "download_files": [
+      "kuielab_b_other.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_b_bass.onnx",
+    "name": "MDX-Net Model: kuielab_b_bass",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "bass",
+      "no bass"
+    ],
+    "target_stem": "bass",
+    "sdr": {
+      "bass": 9.9,
+      "no bass": null
+    },
+    "download_files": [
+      "kuielab_b_bass.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "kuielab_b_drums.onnx",
+    "name": "MDX-Net Model: kuielab_b_drums",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "drums",
+      "no drums"
+    ],
+    "target_stem": "drums",
+    "sdr": {
+      "drums": 7.1,
+      "no drums": null
+    },
+    "download_files": [
+      "kuielab_b_drums.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Main_340.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Main_340",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.2,
+      "instrumental": 15.4
+    },
+    "download_files": [
+      "UVR-MDX-NET_Main_340.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Main_390.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Main_390",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 4.5,
+      "instrumental": 8.8
+    },
+    "download_files": [
+      "UVR-MDX-NET_Main_390.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Main_406.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Main_406",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.4,
+      "instrumental": 15.3
+    },
+    "download_files": [
+      "UVR-MDX-NET_Main_406.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Main_427.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Main_427",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.2,
+      "instrumental": 15.5
+    },
+    "download_files": [
+      "UVR-MDX-NET_Main_427.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Main_438.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Main_438",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.1,
+      "instrumental": 15.3
+    },
+    "download_files": [
+      "UVR-MDX-NET_Main_438.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Inst_82_beta.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Inst_82_beta",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 14.3,
+      "vocals": 8.2
+    },
+    "download_files": [
+      "UVR-MDX-NET_Inst_82_beta.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Inst_90_beta.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Inst_90_beta",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 13.9,
+      "vocals": 8.1
+    },
+    "download_files": [
+      "UVR-MDX-NET_Inst_90_beta.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET_Inst_187_beta.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET_Inst_187_beta",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 14.3,
+      "vocals": 8.5
+    },
+    "download_files": [
+      "UVR-MDX-NET_Inst_187_beta.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "UVR-MDX-NET-Inst_full_292.onnx",
+    "name": "MDX-Net Model VIP: UVR-MDX-NET-Inst_full_292",
+    "type": "MDX",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.1,
+      "vocals": 8.5
+    },
+    "download_files": [
+      "UVR-MDX-NET-Inst_full_292.onnx"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "htdemucs_ft.yaml",
+    "name": "Demucs v4: htdemucs_ft",
+    "type": "Demucs",
+    "category": "multistem",
+    "stems": [
+      "vocals",
+      "drums",
+      "bass",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 10.8,
+      "drums": 10.0,
+      "bass": 12.0,
+      "other": null
+    },
+    "download_files": [
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/f7e0c4bc-ba3fe64a.th",
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/d12395a8-e57c48e6.th",
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/92cfc3b6-ef3bcb9c.th",
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/04573f0d-f3cf25b2.th",
+      "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/htdemucs_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "htdemucs.yaml",
+    "name": "Demucs v4: htdemucs",
+    "type": "Demucs",
+    "category": "multistem",
+    "stems": [
+      "vocals",
+      "drums",
+      "bass",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 9.9,
+      "drums": 9.4,
+      "bass": 11.6,
+      "other": null
+    },
+    "download_files": [
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/955717e8-8726e21a.th",
+      "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/htdemucs.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "hdemucs_mmi.yaml",
+    "name": "Demucs v4: hdemucs_mmi",
+    "type": "Demucs",
+    "category": "multistem",
+    "stems": [
+      "vocals",
+      "drums",
+      "bass",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 10.2,
+      "drums": 9.6,
+      "bass": 12.2,
+      "other": null
+    },
+    "download_files": [
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/75fc33f5-1941ce65.th",
+      "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/hdemucs_mmi.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "htdemucs_6s.yaml",
+    "name": "Demucs v4: htdemucs_6s",
+    "type": "Demucs",
+    "category": "multistem",
+    "stems": [
+      "vocals",
+      "drums",
+      "bass",
+      "guitar",
+      "piano",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 9.6,
+      "drums": 8.5,
+      "bass": 10.1,
+      "guitar": null,
+      "piano": null,
+      "other": null
+    },
+    "download_files": [
+      "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th",
+      "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/htdemucs_6s.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "MDX23C-8KFFT-InstVoc_HQ.ckpt",
+    "name": "MDX23C Model: MDX23C-InstVoc HQ",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 10.6,
+      "instrumental": 15.8
+    },
+    "download_files": [
+      "MDX23C-8KFFT-InstVoc_HQ.ckpt",
+      "model_2_stem_full_band_8k.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MDX23C_D1581.ckpt",
+    "name": "MDX23C Model VIP: MDX23C_D1581",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 10.0,
+      "instrumental": 15.5
+    },
+    "download_files": [
+      "MDX23C_D1581.ckpt",
+      "model_2_stem_061321.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
+    "name": "MDX23C Model VIP: MDX23C-InstVoc HQ 2",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 10.5,
+      "instrumental": 15.9
+    },
+    "download_files": [
+      "MDX23C-8KFFT-InstVoc_HQ_2.ckpt",
+      "model_2_stem_full_band_8k.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+    "name": "Roformer Model: BS-Roformer-Viperx-1297",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 11.8,
+      "instrumental": 16.5
+    },
+    "download_files": [
+      "model_bs_roformer_ep_317_sdr_12.9755.ckpt",
+      "model_bs_roformer_ep_317_sdr_12.9755.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "model_bs_roformer_ep_368_sdr_12.9628.ckpt",
+    "name": "Roformer Model: BS-Roformer-Viperx-1296",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.1,
+      "instrumental": 16.3
+    },
+    "download_files": [
+      "model_bs_roformer_ep_368_sdr_12.9628.ckpt",
+      "model_bs_roformer_ep_368_sdr_12.9628.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "model_bs_roformer_ep_937_sdr_10.5309.ckpt",
+    "name": "Roformer Model: BS-Roformer-Viperx-1053",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "no drum-bass",
+      "drum-bass"
+    ],
+    "target_stem": "no drum-bass",
+    "sdr": {
+      "no drum-bass": null,
+      "drum-bass": null
+    },
+    "download_files": [
+      "model_bs_roformer_ep_937_sdr_10.5309.ckpt",
+      "model_bs_roformer_ep_937_sdr_10.5309.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "model_mel_band_roformer_ep_3005_sdr_11.4360.ckpt",
+    "name": "Roformer Model: Mel-Roformer-Viperx-1143",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 10.5,
+      "instrumental": 15.1
+    },
+    "download_files": [
+      "model_mel_band_roformer_ep_3005_sdr_11.4360.ckpt",
+      "model_mel_band_roformer_ep_3005_sdr_11.4360.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_inst_v1.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Inst V1 by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.9,
+      "vocals": 9.8
+    },
+    "download_files": [
+      "melband_roformer_inst_v1.ckpt",
+      "config_melbandroformer_inst.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_inst_v2.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Inst V2 by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 16.1,
+      "vocals": 10.3
+    },
+    "download_files": [
+      "melband_roformer_inst_v2.ckpt",
+      "config_melbandroformer_inst_v2.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_instvoc_duality_v1.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | InstVoc Duality V1 by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 11.0,
+      "instrumental": 16.1
+    },
+    "download_files": [
+      "melband_roformer_instvoc_duality_v1.ckpt",
+      "config_melbandroformer_instvoc_duality.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_instvox_duality_v2.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | InstVoc Duality V2 by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "vocals": 11.0,
+      "instrumental": 16.1
+    },
+    "download_files": [
+      "melband_roformer_instvox_duality_v2.ckpt",
+      "config_melbandroformer_instvoc_duality.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MDX23C-De-Reverb-aufr33-jarredou.ckpt",
+    "name": "MDX23C Model: MDX23C De-Reverb by aufr33-jarredou",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "no dry"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "dry": null,
+      "no dry": null
+    },
+    "download_files": [
+      "MDX23C-De-Reverb-aufr33-jarredou.ckpt",
+      "config_dereverb_mdx23c.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MDX23C-DrumSep-aufr33-jarredou.ckpt",
+    "name": "MDX23C Model: MDX23C DrumSep by aufr33-jarredou",
+    "type": "MDXC",
+    "category": "multistem",
+    "stems": [
+      "kick",
+      "snare",
+      "toms",
+      "hh",
+      "ride",
+      "crash"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "kick": null,
+      "snare": null,
+      "toms": null,
+      "hh": null,
+      "ride": null,
+      "crash": null
+    },
+    "download_files": [
+      "MDX23C-DrumSep-aufr33-jarredou.ckpt",
+      "config_drumsep_mdx23c.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt",
+    "name": "Roformer Model: Mel-Roformer-Karaoke-Aufr33-Viperx",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [
+      "vocals",
+      "instrumental"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.4,
+      "instrumental": 14.7
+    },
+    "download_files": [
+      "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt",
+      "mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956_config.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_karaoke_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Karaoke by Gabox",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_karaoke_gabox.ckpt",
+      "config_mel_band_roformer_karaoke_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_karaoke_gabox_v2.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Karaoke V2 by Gabox",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_karaoke_gabox_v2.ckpt",
+      "config_mel_band_roformer_karaoke_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_karaoke_becruily.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Karaoke by becruily",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_karaoke_becruily.ckpt",
+      "config_mel_band_roformer_karaoke_becruily.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_karaoke_frazer_becruily.ckpt",
+    "name": "Roformer Model: BS Roformer | Karaoke by frazer-becruily",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_karaoke_frazer_becruily.ckpt",
+      "config_bs_roformer_karaoke_frazer_becruily.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_karaoke_anvuew.ckpt",
+    "name": "Roformer Model: BS Roformer | Karaoke by anvuew",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_karaoke_anvuew.ckpt",
+      "config_bs_roformer_karaoke_anvuew.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "denoise_mel_band_roformer_aufr33_sdr_27.9959.ckpt",
+    "name": "Roformer Model: Mel-Roformer-Denoise-Aufr33",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "other"
+    ],
+    "target_stem": "dry",
+    "sdr": {
+      "dry": null,
+      "other": null
+    },
+    "download_files": [
+      "denoise_mel_band_roformer_aufr33_sdr_27.9959.ckpt",
+      "denoise_mel_band_roformer_aufr33_sdr_27.9959_config.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "denoise_mel_band_roformer_aufr33_aggr_sdr_27.9768.ckpt",
+    "name": "Roformer Model: Mel-Roformer-Denoise-Aufr33-Aggr",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "other"
+    ],
+    "target_stem": "dry",
+    "sdr": {
+      "dry": null,
+      "other": null
+    },
+    "download_files": [
+      "denoise_mel_band_roformer_aufr33_aggr_sdr_27.9768.ckpt",
+      "denoise_mel_band_roformer_aufr33_aggr_sdr_27.9768_config.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_denoise_debleed_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Denoise-Debleed by Gabox",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_denoise_debleed_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_crowd_aufr33_viperx_sdr_8.7144.ckpt",
+    "name": "Roformer Model: Mel-Roformer-Crowd-Aufr33-Viperx",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "crowd",
+      "other"
+    ],
+    "target_stem": "crowd",
+    "sdr": {
+      "crowd": null,
+      "other": null
+    },
+    "download_files": [
+      "mel_band_roformer_crowd_aufr33_viperx_sdr_8.7144.ckpt",
+      "mel_band_roformer_crowd_aufr33_viperx_sdr_8.7144_config.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "deverb_bs_roformer_8_384dim_10depth.ckpt",
+    "name": "Roformer Model: BS-Roformer-De-Reverb",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "noreverb",
+      "reverb"
+    ],
+    "target_stem": "noreverb",
+    "sdr": {
+      "noreverb": null,
+      "reverb": null
+    },
+    "download_files": [
+      "deverb_bs_roformer_8_384dim_10depth.ckpt",
+      "deverb_bs_roformer_8_384dim_10depth_config.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "vocals_mel_band_roformer.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals by Kimberley Jensen",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.6,
+      "other": null
+    },
+    "download_files": [
+      "vocals_mel_band_roformer.ckpt",
+      "vocals_mel_band_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_kim_ft_unwa.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | FT by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.4,
+      "other": null
+    },
+    "download_files": [
+      "mel_band_roformer_kim_ft_unwa.ckpt",
+      "config_mel_band_roformer_kim_ft_unwa.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "mel_band_roformer_kim_ft2_unwa.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | FT 2 by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_kim_ft2_unwa.ckpt",
+      "config_mel_band_roformer_kim_ft_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_kim_ft2_bleedless_unwa.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | FT 2 Bleedless by unwa",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_kim_ft2_bleedless_unwa.ckpt",
+      "config_mel_band_roformer_kim_ft_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_kim_ft3_unwa.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | FT 3 by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_kim_ft3_unwa.ckpt",
+      "config_mel_band_roformer_kim_ft_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_inst_v1_plus.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Inst V1 Plus by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "melband_roformer_inst_v1_plus.ckpt",
+      "config_melbandroformer_inst.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_inst_v1e.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Inst V1 (E) by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "instrumental",
+      "vocals"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": 15.8,
+      "vocals": 9.6
+    },
+    "download_files": [
+      "melband_roformer_inst_v1e.ckpt",
+      "config_melbandroformer_inst.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_inst_v1e_plus.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Inst V1 (E) Plus by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "melband_roformer_inst_v1e_plus.ckpt",
+      "config_melbandroformer_inst.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_vocals_revive_unwa.ckpt",
+    "name": "Roformer Model: BS Roformer | Vocals Revive by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_vocals_revive_unwa.ckpt",
+      "config_bs_roformer_vocals_revive_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_vocals_revive_v2_unwa.ckpt",
+    "name": "Roformer Model: BS Roformer | Vocals Revive V2 by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_vocals_revive_v2_unwa.ckpt",
+      "config_bs_roformer_vocals_revive_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_vocals_revive_v3e_unwa.ckpt",
+    "name": "Roformer Model: BS Roformer | Vocals Revive V3e by Unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_vocals_revive_v3e_unwa.ckpt",
+      "config_bs_roformer_vocals_revive_unwa.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "mel_band_roformer_vocals_becruily.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals by becruily",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_becruily.ckpt",
+      "config_mel_band_roformer_vocals_becruily.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_becruily.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental by becruily",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_becruily.ckpt",
+      "config_mel_band_roformer_instrumental_becruily.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocal_fullness_aname.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals Fullness by Aname",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocal_fullness_aname.ckpt",
+      "config_mel_band_roformer_vocal_fullness_aname.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_vocals_gabox.ckpt",
+    "name": "Roformer Model: BS Roformer | Vocals by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_vocals_gabox.ckpt",
+      "config_bs_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_v2_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals V2 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_v2_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv1_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV1 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv1_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv2_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV2 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv2_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv3_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV3 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv3_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv4_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV4 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv4_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv5_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV5 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv5_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv6_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV6 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv6_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_vocals_fv7b_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Vocals FV7b by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_vocals_fv7b_gabox.ckpt",
+      "config_mel_band_roformer_vocals_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_2_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental 2 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_2_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_3_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental 3 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_3_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_bleedless_v1_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Bleedless V1 by Gabox",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_bleedless_v1_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_bleedless_v2_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Bleedless V2 by Gabox",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_bleedless_v2_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_bleedless_v3_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Bleedless V3 by Gabox",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_bleedless_v3_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fullness_v1_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Fullness V1 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fullness_v1_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fullness_v2_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Fullness V2 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fullness_v2_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fullness_v3_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Fullness V3 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fullness_v3_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fullness_v4_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Fullness V4 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fullness_v4_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fullness_noise_v4_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental Fullness Noisy V4 by Gabox",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fullness_noise_v4_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv5_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV5 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv5_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv5n_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV5N by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv5n_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv6_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV6 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv6_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv6n_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV6N by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv6n_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv7_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV7 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv7_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv7n_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV7N by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv7n_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv8_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV8 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv8_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_instv8n_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | INSTV8N by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_instv8n_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fv7z_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental FV7z by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fv7z_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fv8_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental FV8 by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fv8_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fv8b_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental FV8b by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fv8b_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_instrumental_fvx_gabox.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Instrumental FVX by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "mel_band_roformer_instrumental_fvx_gabox.ckpt",
+      "config_mel_band_roformer_instrumental_gabox.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb_mel_band_roformer_anvuew_sdr_19.1729.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb by anvuew",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "noreverb",
+      "reverb"
+    ],
+    "target_stem": "noreverb",
+    "sdr": {
+      "noreverb": null,
+      "reverb": null
+    },
+    "download_files": [
+      "dereverb_mel_band_roformer_anvuew_sdr_19.1729.ckpt",
+      "dereverb_mel_band_roformer_anvuew.yaml"
+    ],
+    "is_recommended": true
+  },
+  {
+    "filename": "dereverb_mel_band_roformer_less_aggressive_anvuew_sdr_18.8050.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb Less Aggressive by anvuew",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "noreverb",
+      "reverb"
+    ],
+    "target_stem": "noreverb",
+    "sdr": {
+      "noreverb": null,
+      "reverb": null
+    },
+    "download_files": [
+      "dereverb_mel_band_roformer_less_aggressive_anvuew_sdr_18.8050.ckpt",
+      "dereverb_mel_band_roformer_anvuew.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb_mel_band_roformer_mono_anvuew.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb Mono by anvuew",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "dereverb_mel_band_roformer_mono_anvuew.ckpt",
+      "dereverb_mel_band_roformer_anvuew.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb_big_mbr_ep_362.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb Big by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "dereverb_big_mbr_ep_362.ckpt",
+      "config_dereverb_echo_mel_band_roformer_v2.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb_super_big_mbr_ep_346.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb Super Big by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "dereverb_super_big_mbr_ep_346.ckpt",
+      "config_dereverb_echo_mel_band_roformer_v2.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb-echo_mel_band_roformer_sdr_10.0169.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb-Echo by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "no dry"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "dry": null,
+      "no dry": null
+    },
+    "download_files": [
+      "dereverb-echo_mel_band_roformer_sdr_10.0169.ckpt",
+      "config_dereverb-echo_mel_band_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb-echo_mel_band_roformer_sdr_13.4843_v2.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb-Echo V2 by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "dry",
+      "no dry"
+    ],
+    "target_stem": "dry",
+    "sdr": {
+      "dry": null,
+      "no dry": null
+    },
+    "download_files": [
+      "dereverb-echo_mel_band_roformer_sdr_13.4843_v2.ckpt",
+      "config_dereverb-echo_mel_band_roformer_sdr_13.4843_v2.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "dereverb_echo_mbr_fused.ckpt",
+    "name": "Roformer Model: MelBand Roformer | De-Reverb-Echo Fused by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "dereverb_echo_mbr_fused.ckpt",
+      "config_dereverb_echo_mel_band_roformer_v2.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MelBandRoformerSYHFT.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | SYHFT by SYH99999",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.0,
+      "other": null
+    },
+    "download_files": [
+      "MelBandRoformerSYHFT.ckpt",
+      "config_vocals_mel_band_roformer_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MelBandRoformerSYHFTV2.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | SYHFT V2 by SYH99999",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.6,
+      "other": null
+    },
+    "download_files": [
+      "MelBandRoformerSYHFTV2.ckpt",
+      "config_vocals_mel_band_roformer_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MelBandRoformerSYHFTV2.5.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | SYHFT V2.5 by SYH99999",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 8.5,
+      "other": null
+    },
+    "download_files": [
+      "MelBandRoformerSYHFTV2.5.ckpt",
+      "config_vocals_mel_band_roformer_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MelBandRoformerSYHFTV3Epsilon.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | SYHFT V3 by SYH99999",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 9.5,
+      "other": null
+    },
+    "download_files": [
+      "MelBandRoformerSYHFTV3Epsilon.ckpt",
+      "config_vocals_mel_band_roformer_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "MelBandRoformerBigSYHFTV1.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Big SYHFT V1 by SYH99999",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.3,
+      "other": null
+    },
+    "download_files": [
+      "MelBandRoformerBigSYHFTV1.ckpt",
+      "config_vocals_mel_band_roformer_big_v1_ft.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_big_beta4.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Big Beta 4 FT by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.5,
+      "other": null
+    },
+    "download_files": [
+      "melband_roformer_big_beta4.ckpt",
+      "config_melbandroformer_big_beta4.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_big_beta5e.ckpt",
+    "name": "Roformer Model: MelBand Roformer Kim | Big Beta 5e FT by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [
+      "vocals",
+      "other"
+    ],
+    "target_stem": "vocals",
+    "sdr": {
+      "vocals": 12.4,
+      "other": null
+    },
+    "download_files": [
+      "melband_roformer_big_beta5e.ckpt",
+      "config_melband_roformer_big_beta5e.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_big_beta6.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Big Beta 6 by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "melband_roformer_big_beta6.ckpt",
+      "config_melbandroformer_big_beta6.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "melband_roformer_big_beta6x.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Big Beta 6X by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "melband_roformer_big_beta6x.ckpt",
+      "config_melbandroformer_big_beta6x.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "model_chorus_bs_roformer_ep_267_sdr_24.1275.ckpt",
+    "name": "Roformer Model: BS Roformer | Chorus Male-Female by Sucial",
+    "type": "MDXC",
+    "category": "karaoke",
+    "stems": [
+      "male",
+      "female"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "male": null,
+      "female": null
+    },
+    "download_files": [
+      "model_chorus_bs_roformer_ep_267_sdr_24.1275.ckpt",
+      "config_chorus_male_female_bs_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_male_female_by_aufr33_sdr_7.2889.ckpt",
+    "name": "Roformer Model: BS Roformer | Male-Female by aufr33",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_male_female_by_aufr33_sdr_7.2889.ckpt",
+      "config_chorus_male_female_bs_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "aspiration_mel_band_roformer_sdr_18.9845.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Aspiration by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "aspiration",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "aspiration": null,
+      "other": null
+    },
+    "download_files": [
+      "aspiration_mel_band_roformer_sdr_18.9845.ckpt",
+      "config_aspiration_mel_band_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "aspiration_mel_band_roformer_less_aggr_sdr_18.1201.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Aspiration Less Aggressive by Sucial",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "aspiration",
+      "other"
+    ],
+    "target_stem": null,
+    "sdr": {
+      "aspiration": null,
+      "other": null
+    },
+    "download_files": [
+      "aspiration_mel_band_roformer_less_aggr_sdr_18.1201.ckpt",
+      "config_aspiration_mel_band_roformer.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "mel_band_roformer_bleed_suppressor_v1.ckpt",
+    "name": "Roformer Model: MelBand Roformer | Bleed Suppressor V1 by unwa-97chris",
+    "type": "MDXC",
+    "category": "cleanup",
+    "stems": [
+      "instrumental",
+      "bleed"
+    ],
+    "target_stem": "instrumental",
+    "sdr": {
+      "instrumental": null,
+      "bleed": null
+    },
+    "download_files": [
+      "mel_band_roformer_bleed_suppressor_v1.ckpt",
+      "config_mel_band_roformer_bleed_suppressor_v1.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_vocals_resurrection_unwa.ckpt",
+    "name": "Roformer Model: BS Roformer | Vocals Resurrection by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_vocals_resurrection_unwa.ckpt",
+      "config_bs_roformer_vocals_resurrection_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_instrumental_resurrection_unwa.ckpt",
+    "name": "Roformer Model: BS Roformer | Instrumental Resurrection by unwa",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_instrumental_resurrection_unwa.ckpt",
+      "config_bs_roformer_instrumental_resurrection_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "bs_roformer_instrumental_resurrection_gabox.ckpt",
+    "name": "Roformer Model: BS Roformer | Instrumental ResurrectioN by Gabox",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "bs_roformer_instrumental_resurrection_gabox.ckpt",
+      "config_bs_roformer_instrumental_resurrection_unwa.yaml"
+    ],
+    "is_recommended": false
+  },
+  {
+    "filename": "BS-Roformer-SW.ckpt",
+    "name": "Roformer Model: BS Roformer SW by jarredou",
+    "type": "MDXC",
+    "category": "vocal-inst",
+    "stems": [],
+    "target_stem": null,
+    "sdr": {
+      "unknown": null
+    },
+    "download_files": [
+      "BS-Roformer-SW.ckpt",
+      "BS-Roformer-SW.yaml"
+    ],
+    "is_recommended": false
+  }
+]

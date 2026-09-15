@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
@@ -6,18 +6,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FolderOpenIcon, Music, Loader2 } from "lucide-react";
+import { FolderOpenIcon, Music, Loader2, Store } from "lucide-react";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Progress } from "@/components/ui/progress";
+import rawCatalog from "@/lib/model-catalog.json";
 
 interface ProgressPayload {
   item: string;
   progress: number;
 }
 
-export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean) => void }) {
+interface InstalledModel {
+  filename: string;
+  size_bytes: number;
+  modified_time: number;
+  is_custom: boolean;
+  custom_name?: string | null;
+  custom_type?: string | null;
+  custom_stems?: string[] | null;
+}
+
+interface StemExtractorProps {
+  onBusyChange?: (busy: boolean) => void;
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
+  onNavigateToModelStore?: () => void;
+}
+
+export function StemExtractor({
+  onBusyChange,
+  selectedModel,
+  onModelChange,
+  onNavigateToModelStore,
+}: StemExtractorProps) {
   const player = usePlayer();
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [isReady, setIsReady] = useState(false);
@@ -31,7 +63,87 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
   const [progresses, setProgresses] = useState<Record<string, number>>({});
   
   const [inputFile, setInputFile] = useState("");
-  const [model, setModel] = useState("htdemucs.yaml");
+  const [internalModel, setInternalModel] = useState("htdemucs.yaml");
+  const model = selectedModel !== undefined ? selectedModel : internalModel;
+  const setModel = (m: string) => {
+    setInternalModel(m);
+    onModelChange?.(m);
+  };
+  const [installedModels, setInstalledModels] = useState<InstalledModel[]>([]);
+
+  const loadInstalledModels = useCallback(async () => {
+    try {
+      const list = await invoke<InstalledModel[]>("get_installed_models");
+      setInstalledModels(list);
+    } catch (e) {
+      console.error("Failed to load installed models:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadInstalledModels();
+  }, [loadInstalledModels, isReady]);
+
+  const modelOptions = useMemo(() => {
+    const catMap = new Map((rawCatalog as { filename: string; name: string; type: string }[]).map((c) => [c.filename, c]));
+
+    const defaults = [
+      { value: "htdemucs.yaml", label: "htdemucs (Standard 4-Stems)", group: "Demucs v4" },
+      { value: "htdemucs_6s.yaml", label: "htdemucs_6s (6-Stems)", group: "Demucs v4" },
+      { value: "UVR_MDXNET_KARA_2.onnx", label: "UVR MDX-Net Kara 2", group: "MDX-Net" },
+      { value: "UVR-MDX-NET-Inst_HQ_3.onnx", label: "UVR MDX-Net Inst HQ 3", group: "MDX-Net" },
+      { value: "Kim_Vocal_2.onnx", label: "Kim Vocal 2", group: "MDX-Net" },
+    ];
+
+    const optionsMap = new Map<string, { value: string; label: string; group: string }>();
+    defaults.forEach((d) => optionsMap.set(d.value, d));
+
+    for (const inst of installedModels) {
+      if (optionsMap.has(inst.filename)) continue;
+      const cat = catMap.get(inst.filename);
+      if (inst.is_custom) {
+        optionsMap.set(inst.filename, {
+          value: inst.filename,
+          label: inst.custom_name || inst.filename,
+          group: "Custom",
+        });
+      } else if (cat) {
+        optionsMap.set(inst.filename, {
+          value: inst.filename,
+          label: cat.name,
+          group: cat.type === "MDXC" ? "Roformer" : cat.type,
+        });
+      } else {
+        optionsMap.set(inst.filename, {
+          value: inst.filename,
+          label: inst.filename,
+          group: "Installed",
+        });
+      }
+    }
+
+    if (model && !optionsMap.has(model)) {
+      const cat = catMap.get(model);
+      optionsMap.set(model, {
+        value: model,
+        label: cat?.name || model,
+        group: cat?.type || "Selected",
+      });
+    }
+
+    return Array.from(optionsMap.values());
+  }, [installedModels, model]);
+
+  const groupedModelOptions = useMemo(() => {
+    const groups: Record<string, { value: string; label: string; group: string }[]> = {};
+    for (const opt of modelOptions) {
+      if (!groups[opt.group]) {
+        groups[opt.group] = [];
+      }
+      groups[opt.group].push(opt);
+    }
+    return groups;
+  }, [modelOptions]);
   const [outputFormat, setOutputFormat] = useState("FLAC");
   const [overlap, setOverlap] = useState("4");
   const [segmentSize, setSegmentSize] = useState("256");
@@ -220,27 +332,48 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label>AI Model</Label>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-6 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>AI Model</Label>
+              {onNavigateToModelStore && (
+                <button
+                  type="button"
+                  onClick={onNavigateToModelStore}
+                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                >
+                  <Store className="w-3.5 h-3.5" /> Browse Model Store
+                </button>
+              )}
+            </div>
             <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select AI Model" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="htdemucs.yaml">htdemucs (Standard 4-Stems)</SelectItem>
-                <SelectItem value="htdemucs_6s.yaml">htdemucs_6s (6-Stems)</SelectItem>
-                <SelectItem value="UVR_MDXNET_KARA_2.onnx">UVR MDX-Net Kara 2</SelectItem>
-                <SelectItem value="UVR-MDX-NET-Inst_HQ_3.onnx">UVR MDX-Net Inst HQ 3</SelectItem>
-                <SelectItem value="Kim_Vocal_2.onnx">Kim Vocal 2</SelectItem>
+              <SelectContent className="min-w-[380px] sm:min-w-[460px] max-w-[560px] max-h-80">
+                {Object.entries(groupedModelOptions).map(([groupName, items], idx) => (
+                  <SelectGroup key={groupName}>
+                    {idx > 0 && <SelectSeparator className="my-1" />}
+                    <SelectLabel className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {groupName}
+                    </SelectLabel>
+                    {items.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className="py-2 cursor-pointer">
+                        <span className="truncate text-sm font-medium" title={opt.label}>
+                          {opt.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div className="space-y-2">
+          <div className="md:col-span-2 space-y-2">
             <Label>Output Format</Label>
             <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Format" />
               </SelectTrigger>
               <SelectContent>
@@ -252,10 +385,10 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="md:col-span-2 space-y-2">
             <Label>Overlap</Label>
             <Select value={overlap} onValueChange={(val) => { if (val) setOverlap(val); }} disabled={isExtracting}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Overlap" />
               </SelectTrigger>
               <SelectContent>
@@ -268,10 +401,10 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="md:col-span-2 space-y-2">
             <Label>Segment</Label>
             <Select value={segmentSize} onValueChange={(val) => { if (val) setSegmentSize(val); }} disabled={isExtracting}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Segment" />
               </SelectTrigger>
               <SelectContent>
