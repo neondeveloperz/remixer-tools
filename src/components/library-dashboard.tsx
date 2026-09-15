@@ -28,12 +28,9 @@ import {
   Sliders,
   Calendar,
   FileAudio,
-  Mic,
-  Disc3,
-  Activity,
-  CheckCircle2,
 } from "lucide-react";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
+import { extractStemName } from "@/lib/utils";
 
 export interface StorageFileItem {
   name: string;
@@ -78,7 +75,7 @@ export function LibraryDashboard({
   const navigateToMixer = onNavigateToMixer || onNavigateToExtractor;
   const player = usePlayer();
   const [files, setFiles] = useState<StorageFileItem[]>([]);
-  const [dirs, setDirs] = useState<StorageDirs | null>(null);
+  const [_dirs, setDirs] = useState<StorageDirs | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "downloads" | "stems">("all");
@@ -98,8 +95,11 @@ export function LibraryDashboard({
           const map: Record<string, SavedDownloadMetadata> = {};
           parsed.forEach((item: SavedDownloadMetadata) => {
             if (item.filepath) {
+              map[item.filepath] = item;
               const filename = item.filepath.split(/[/\\]/).pop() || "";
               map[filename] = item;
+              const fileBase = filename.replace(/\.[^/.]+$/, "");
+              map[fileBase] = item;
             }
             if (item.title) {
               map[item.title] = item;
@@ -229,7 +229,7 @@ export function LibraryDashboard({
   };
 
   // Handle Play Stem Group
-  const handlePlayStemGroup = (groupName: string, stemFiles: StorageFileItem[]) => {
+  const handlePlayStemGroup = (_groupName: string, stemFiles: StorageFileItem[]) => {
     const tracks: TrackInfo[] = stemFiles.map((sf) => ({
       name: sf.stem_type || extractStemName(sf.name),
       path: sf.path,
@@ -346,7 +346,7 @@ export function LibraryDashboard({
           <Button
             variant="secondary"
             size="sm"
-            onClick={loadFiles}
+            onClick={() => loadFiles(false)}
             disabled={isLoading}
             className="gap-1.5"
           >
@@ -624,7 +624,16 @@ export function LibraryDashboard({
             const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
             const isStem = file.category === "stem";
             const baseName = file.name.replace(/\.[^/.]+$/, "");
-            const meta = downloadMeta[file.name] || downloadMeta[baseName];
+            const meta =
+              downloadMeta[file.path] ||
+              downloadMeta[file.name] ||
+              downloadMeta[baseName] ||
+              Object.values(downloadMeta).find(
+                (m) =>
+                  m.title &&
+                  (file.name.toLowerCase().includes(m.title.toLowerCase()) ||
+                    m.title.toLowerCase().includes(baseName.toLowerCase()))
+              );
             const badgeStyle = isStem ? getStemBadgeStyle(file.stem_type) : "";
 
             return (

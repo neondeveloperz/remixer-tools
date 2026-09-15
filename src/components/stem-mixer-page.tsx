@@ -2,7 +2,7 @@ import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { DawTrackMixer } from "@/components/daw-track-mixer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sliders, Music, FolderOpen, Sparkles, FolderArchive, Plus } from "lucide-react";
+import { Sliders, Music, Sparkles, FolderArchive, Plus } from "lucide-react";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { extractStemName } from "@/lib/utils";
 
