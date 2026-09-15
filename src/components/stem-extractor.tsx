@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FolderOpenIcon, Music, Loader2, Store } from "lucide-react";
+import { FolderOpenIcon, Music, Loader2, Store, Zap } from "lucide-react";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Progress } from "@/components/ui/progress";
 import rawCatalog from "@/lib/model-catalog.json";
@@ -148,6 +148,7 @@ export function StemExtractor({
   const [overlap, setOverlap] = useState("4");
   const [segmentSize, setSegmentSize] = useState("256");
   const [useGpu, setUseGpu] = useState(true);
+  const [lowMemory, setLowMemory] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -250,7 +251,8 @@ export function StemExtractor({
         outputFormat, 
         useGpu,
         overlap,
-        segmentSize
+        segmentSize,
+        lowMemory,
       });
     } catch (e) {
       setExtractLog(prev => [...prev, `Error: ${e}`]);
@@ -402,8 +404,8 @@ export function StemExtractor({
                 <SelectValue placeholder="Overlap" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2">2 (Fast)</SelectItem>
-                <SelectItem value="4">4 (Default)</SelectItem>
+                <SelectItem value="2">2 (Fast / Low RAM)</SelectItem>
+                <SelectItem value="4">4 (Default / Balanced)</SelectItem>
                 <SelectItem value="6">6 (High Quality)</SelectItem>
                 <SelectItem value="8">8 (Higher Quality)</SelectItem>
                 <SelectItem value="10">10 (Maximum)</SelectItem>
@@ -418,26 +420,58 @@ export function StemExtractor({
                 <SelectValue placeholder="Segment" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="128">128 (Low VRAM)</SelectItem>
-                <SelectItem value="256">256 (Default)</SelectItem>
-                <SelectItem value="512">512</SelectItem>
-                <SelectItem value="768">768</SelectItem>
-                <SelectItem value="1024">1024 (Best Quality)</SelectItem>
+                <SelectItem value="128">128 (Ultra Low RAM)</SelectItem>
+                <SelectItem value="256">256 (Default / Balanced)</SelectItem>
+                <SelectItem value="512">512 (High Quality)</SelectItem>
+                <SelectItem value="768">768 (Heavy RAM)</SelectItem>
+                <SelectItem value="1024">1024 (Max - High RAM)</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 py-2">
-          <Checkbox 
-            id="use-gpu" 
-            checked={useGpu} 
-            onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
-            disabled={isExtracting}
-          />
-          <Label htmlFor="use-gpu" className="font-medium cursor-pointer">
-            Enable GPU Acceleration (DirectML / CUDA)
-          </Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 bg-muted/40 p-3 rounded-lg border border-border/60">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="use-gpu" 
+              checked={useGpu} 
+              onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
+              disabled={isExtracting}
+            />
+            <Label htmlFor="use-gpu" className="font-medium cursor-pointer text-sm">
+              Enable GPU Acceleration (DirectML / CUDA)
+            </Label>
+          </div>
+
+          <div className="flex items-start space-x-2.5">
+            <Checkbox 
+              id="low-memory" 
+              checked={lowMemory} 
+              onCheckedChange={(checked) => {
+                const isChecked = checked as boolean;
+                setLowMemory(isChecked);
+                if (isChecked) {
+                  if (segmentSize === "512" || segmentSize === "768" || segmentSize === "1024") {
+                    setSegmentSize("256");
+                  }
+                }
+              }} 
+              disabled={isExtracting}
+              className="mt-0.5"
+            />
+            <div className="grid gap-1 leading-none">
+              <Label htmlFor="low-memory" className="font-medium cursor-pointer text-sm flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                Memory Saver Mode
+                <span className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1.5 py-0.5 rounded">
+                  Recommended
+                </span>
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                Enforces batch size 1, FP16 autocast, and audio chunking to prevent high RAM/VRAM usage.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-4">

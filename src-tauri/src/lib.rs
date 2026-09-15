@@ -74,7 +74,6 @@ async fn download_file_with_progress(
 }
 
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -131,6 +130,7 @@ fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
 }
 
 #[derive(Serialize, Deserialize)]
+#[allow(dead_code)]
 struct VideoInfo {
     id: String,
     title: String,
@@ -549,7 +549,7 @@ async fn run_ytdlp(
             }
         });
 
-        if let Ok(status) = child.wait() {
+        if let Ok(_status) = child.wait() {
             let _ = app_clone.emit("ytdlp-done", id_clone);
         }
     });
@@ -784,8 +784,41 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         }
     }
 
+    let venv_python = if cfg!(target_os = "windows") {
+        venv_dir.join("Scripts").join("python.exe")
+    } else {
+        venv_dir.join("bin").join("python")
+    };
+    ensure_separator_dml_patch(&venv_python);
+
     app.emit("stem-log", "STEM Extractor is ready!").unwrap();
     Ok(())
+}
+
+fn ensure_separator_dml_patch(python_path: &std::path::Path) {
+    #[cfg(target_os = "windows")]
+    {
+        let script = r#"
+try:
+    import inspect, audio_separator.separator.separator as s
+    path = inspect.getfile(s)
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    old = 'if "CUDAExecutionProvider" in ort_providers:\n            self.logger.info("ONNXruntime has CUDAExecutionProvider available, enabling acceleration")\n            self.onnx_execution_provider = ["CUDAExecutionProvider"]'
+    new = 'if "CUDAExecutionProvider" in ort_providers:\n            self.logger.info("ONNXruntime has CUDAExecutionProvider available, enabling acceleration")\n            self.onnx_execution_provider = ["CUDAExecutionProvider"]\n        elif "DmlExecutionProvider" in ort_providers:\n            self.logger.info("ONNXruntime has DmlExecutionProvider available, enabling acceleration")\n            self.onnx_execution_provider = ["DmlExecutionProvider"]'
+    if old in content and new not in content:
+        content = content.replace(old, new, 1)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(content)
+except Exception:
+    pass
+"#;
+        let _ = std::process::Command::new(python_path)
+            .hide_window()
+            .arg("-c")
+            .arg(script)
+            .output();
+    }
 }
 
 #[tauri::command]
@@ -797,6 +830,7 @@ async fn run_stem_extractor(
     use_gpu: bool,
     overlap: Option<String>,
     segment_size: Option<String>,
+    low_memory: Option<bool>,
 ) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     let venv_dir = app_dir.join("venv");
@@ -807,11 +841,20 @@ async fn run_stem_extractor(
         venv_dir.join("bin").join("audio-separator")
     };
 
+    let python_path = if cfg!(target_os = "windows") {
+        venv_dir.join("Scripts").join("python.exe")
+    } else {
+        venv_dir.join("bin").join("python")
+    };
+
     if !separator_path.exists() {
         return Err("audio-separator not found. Please wait for setup to complete.".to_string());
     }
 
+    ensure_separator_dml_patch(&python_path);
+
     let target_dir = get_settings(app.clone()).unwrap_or_default().download_dir;
+    let models_dir = get_models_dir(&app);
 
     app.emit(
         "stem-extract-log",
@@ -834,6 +877,16 @@ async fn run_stem_extractor(
 
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
+
+        // Memory optimization: prevent CPU thread explosion across all logical cores
+        cmd.env("OMP_NUM_THREADS", "4");
+        cmd.env("MKL_NUM_THREADS", "4");
+        cmd.env("OPENBLAS_NUM_THREADS", "4");
+        cmd.env("NUMEXPR_NUM_THREADS", "4");
+        cmd.env("VECLIB_MAXIMUM_THREADS", "4");
+
+        // Prevent PyTorch CUDA memory fragmentation on 4GB-8GB GPUs
+        cmd.env("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True");
         
         #[cfg(not(target_os = "windows"))]
         {
@@ -847,36 +900,95 @@ async fn run_stem_extractor(
         cmd.arg("--model_filename").arg(&model);
         cmd.arg("--output_format").arg(&output_format);
 
+        let is_low_mem = low_memory.unwrap_or(true);
+
+        // Enforce batch size 1 across all architectures to dramatically reduce RAM/VRAM footprint
+        cmd.arg("--mdxc_batch_size").arg("1");
+        cmd.arg("--mdx_batch_size").arg("1");
+        cmd.arg("--vr_batch_size").arg("1");
+
+        // Chunk long audio files into smaller durations to keep memory flat regardless of song length
+        if is_low_mem {
+            cmd.arg("--chunk_duration").arg("300"); // 5-minute chunks
+        } else {
+            cmd.arg("--chunk_duration").arg("600"); // 10-minute chunks
+        }
+
+        let model_lower = model.to_lowercase();
+        let is_demucs = model_lower.contains("demucs") || (model_lower.ends_with(".yaml") && !model_lower.contains("roformer") && !model_lower.contains("bs_") && !model_lower.contains("mel_band"));
+
         if let Some(overlap_val) = &overlap {
             let overlap_float = match overlap_val.as_str() {
                 "2" => "0.2",
-                "4" => "0.4",
-                "6" => "0.6",
-                "8" => "0.8",
+                "4" => "0.25",
+                "6" => "0.5",
+                "8" => "0.75",
                 "10" => "0.99",
                 other => other,
             };
 
             cmd.arg("--mdx_overlap").arg(overlap_float);
             cmd.arg("--demucs_overlap").arg(overlap_float);
-            cmd.arg("--demucs_shifts").arg(overlap_val);
             cmd.arg("--mdxc_overlap").arg(overlap_val);
+
+            // In Demucs, shifts = number of full repeated passes with random shifts.
+            // Do NOT use overlap_val directly for shifts, as 4 or 6 shifts multiplies Demucs RAM 4x!
+            let shifts = if is_low_mem {
+                "1"
+            } else {
+                match overlap_val.as_str() {
+                    "2" => "1",
+                    "4" => "2",
+                    "6" | "8" | "10" => "2",
+                    _ => "2",
+                }
+            };
+            cmd.arg("--demucs_shifts").arg(shifts);
+        } else {
+            let shifts = if is_low_mem { "1" } else { "2" };
+            cmd.arg("--demucs_shifts").arg(shifts);
         }
 
         if let Some(segment_val) = &segment_size {
             cmd.arg("--mdx_segment_size").arg(segment_val);
             cmd.arg("--mdxc_segment_size").arg(segment_val);
-            cmd.arg("--demucs_segment_size").arg(segment_val);
+
+            if is_low_mem {
+                cmd.arg("--mdxc_override_model_segment_size");
+            }
+
+            // Demucs segment size is in SECONDS (not FFT frames 128/256/512/1024)!
+            // Blindly passing 256 or 512 caused Demucs to allocate 4-8.5 minute tensors in RAM at once!
+            if is_demucs {
+                if is_low_mem {
+                    cmd.arg("--demucs_segment_size").arg("20");
+                } else {
+                    cmd.arg("--demucs_segment_size").arg("Default");
+                }
+            }
+        } else if is_demucs {
+            if is_low_mem {
+                cmd.arg("--demucs_segment_size").arg("20");
+            } else {
+                cmd.arg("--demucs_segment_size").arg("Default");
+            }
+        }
+
+        if is_demucs {
+            cmd.arg("--demucs_segments_enabled").arg("True");
         }
 
         if use_gpu {
             if cfg!(target_os = "windows") {
                 cmd.arg("--use_directml");
             }
-            // On macOS, audio-separator auto-detects MPS/CoreML, and --use_autocast breaks PyTorch 2.2.2
+            #[cfg(not(target_os = "macos"))]
+            {
+                // Use PyTorch FP16 autocast to halve intermediate activation memory on GPU
+                cmd.arg("--use_autocast");
+            }
         }
 
-        let models_dir = get_models_dir(&app);
         cmd.arg("--model_file_dir").arg(&models_dir);
 
         if !target_dir.is_empty() {
