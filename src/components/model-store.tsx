@@ -384,7 +384,7 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
           <div className="p-2.5 rounded-lg bg-primary/10 text-primary">
             <Layers className="w-5 h-5" />
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-2xl font-bold">{allDisplayModels.length}</div>
             <div className="text-xs text-muted-foreground">Catalog Models</div>
           </div>
@@ -394,7 +394,7 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
           <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
             <CheckCircle2 className="w-5 h-5" />
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-2xl font-bold">{installedModels.length}</div>
             <div className="text-xs text-muted-foreground">Installed Ready</div>
           </div>
@@ -404,7 +404,7 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
           <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400">
             <HardDrive className="w-5 h-5" />
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-2xl font-bold">{totalInstalledSizeMB} MB</div>
             <div className="text-xs text-muted-foreground">Storage Used</div>
           </div>
@@ -414,7 +414,7 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
           <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-400">
             <Cpu className="w-5 h-5" />
           </div>
-          <div>
+          <div className="text-center">
             <div className="text-2xl font-bold">Roformer / UVR</div>
             <div className="text-xs text-muted-foreground">SOTA Engine</div>
           </div>

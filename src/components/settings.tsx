@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FolderOpenIcon, RefreshCwIcon } from "lucide-react";
+import { FolderOpenIcon, RefreshCwIcon, Sun, Moon } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useTheme } from "@/components/theme-provider";
 
 export function Settings() {
+  const { theme, setTheme } = useTheme();
   const [downloadDir, setDownloadDir] = useState<string>("");
   const [filenameTemplate, setFilenameTemplate] = useState<string>("%(title)s.%(ext)s");
   const [isSaving, setIsSaving] = useState(false);
@@ -18,7 +20,7 @@ export function Settings() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const settings = await invoke<{download_dir: string, filename_template: string | null}>("get_settings");
+        const settings = await invoke<{ download_dir: string, filename_template: string | null }>("get_settings");
         setDownloadDir(settings.download_dir);
         if (settings.filename_template) {
           setFilenameTemplate(settings.filename_template);
@@ -63,22 +65,22 @@ export function Settings() {
     try {
       const currentVersion = await getVersion();
       const response = await fetch("https://api.github.com/repos/neondeveloperz/remixer-tools/releases/latest");
-      
+
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
-      
+
       const data = await response.json();
-      
+
       if (data.tag_name) {
         const latestVersion = data.tag_name.replace('v', '');
         if (latestVersion > currentVersion) {
-            setUpdateStatus(`Update available: v${latestVersion}`);
-            if (confirm(`New version v${latestVersion} is available! (Current: v${currentVersion})\n\nDo you want to go to the download page?`)) {
-                await openUrl(data.html_url);
-            }
+          setUpdateStatus(`Update available: v${latestVersion}`);
+          if (confirm(`New version v${latestVersion} is available! (Current: v${currentVersion})\n\nDo you want to go to the download page?`)) {
+            await openUrl(data.html_url);
+          }
         } else {
-            setUpdateStatus(`You are up to date (v${currentVersion}).`);
+          setUpdateStatus(`You are up to date (v${currentVersion}).`);
         }
       } else {
         setUpdateStatus("Could not fetch latest version.");
@@ -101,10 +103,10 @@ export function Settings() {
         <div className="space-y-2">
           <Label htmlFor="download-dir">Default Download Directory</Label>
           <div className="flex gap-2">
-            <Input 
-              id="download-dir" 
-              readOnly 
-              value={downloadDir || "Default (Downloads folder)"} 
+            <Input
+              id="download-dir"
+              readOnly
+              value={downloadDir || "Default (Downloads folder)"}
               className="font-mono text-sm text-muted-foreground"
             />
             <Button variant="outline" onClick={selectDirectory}>
@@ -120,9 +122,9 @@ export function Settings() {
         <div className="space-y-2">
           <Label htmlFor="filename-template">Filename Template</Label>
           <div className="flex gap-2">
-            <Input 
-              id="filename-template" 
-              value={filenameTemplate} 
+            <Input
+              id="filename-template"
+              value={filenameTemplate}
               onChange={(e) => setFilenameTemplate(e.target.value)}
               placeholder="%(title)s.%(ext)s"
               className="font-mono text-sm"
@@ -134,6 +136,46 @@ export function Settings() {
           <p className="text-xs text-muted-foreground">
             Variables: <code>%(title)s</code>, <code>%(id)s</code>, <code>%(ext)s</code>, <code>%(uploader)s</code>, <code>%(resolution)s</code>
           </p>
+        </div>
+
+        <div className="space-y-3 border-t pt-4 mt-4">
+          <Label>Appearance</Label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              className={`flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${theme === "light"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-border hover:bg-muted/50"
+                }`}
+            >
+              <div className="p-2 rounded-md bg-amber-500/10 text-amber-500">
+                <Sun className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold flex items-center gap-1.5">
+                  Light Mode
+                  <span className="text-[10px] px-1.5 py-0.2 bg-muted rounded font-normal text-muted-foreground">Default</span>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              className={`flex items-center gap-3 p-3.5 rounded-lg border text-left transition-all cursor-pointer ${theme === "dark"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-border hover:bg-muted/50"
+                }`}
+            >
+              <div className="p-2 rounded-md bg-sky-500/10 text-sky-400">
+                <Moon className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">Dark Mode</div>
+              </div>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2 border-t pt-4 mt-4">

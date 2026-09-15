@@ -350,15 +350,25 @@ export function StemExtractor({
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select AI Model" />
               </SelectTrigger>
-              <SelectContent className="min-w-[380px] sm:min-w-[460px] max-w-[560px] max-h-80">
+              <SelectContent
+                side="bottom"
+                align="start"
+                alignItemWithTrigger={false}
+                sideOffset={6}
+                className="w-(--anchor-width) min-w-[340px] max-h-80 p-1.5 shadow-xl border border-border/80"
+              >
                 {Object.entries(groupedModelOptions).map(([groupName, items], idx) => (
                   <SelectGroup key={groupName}>
-                    {idx > 0 && <SelectSeparator className="my-1" />}
-                    <SelectLabel className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {idx > 0 && <SelectSeparator className="my-1.5" />}
+                    <SelectLabel className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                       {groupName}
                     </SelectLabel>
                     {items.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value} className="py-2 cursor-pointer">
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="py-2 px-2.5 cursor-pointer rounded-md transition-colors"
+                      >
                         <span className="truncate text-sm font-medium" title={opt.label}>
                           {opt.label}
                         </span>

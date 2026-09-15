@@ -177,7 +177,7 @@ export function YtDlp() {
     <div className="space-y-6">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Video Downloader</CardTitle>
+          <CardTitle>Downloader</CardTitle>
           <CardDescription>Download videos or extract MP3 audio using yt-dlp.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
