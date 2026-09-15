@@ -9,9 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
 import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders } from "lucide-react"
-import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
   user: {

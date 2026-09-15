@@ -190,7 +190,6 @@ fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
         }
     }
 
-    // Default
     let mut default_settings = AppSettings::default();
     default_settings.download_dir = default_base_dir;
     default_settings.filename_template = Some("%(title)s.%(ext)s".to_string());
