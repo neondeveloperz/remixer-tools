@@ -1,5 +1,24 @@
 # Changelog
 
+## 🚀 What's New in v0.3.1
+
+This update introduces the **DAW Multi-Track Studio & STEM Mixer**, a dedicated **History & Library Dashboard**, sample-accurate **Web Audio Multi-Track Synchronization**, and comprehensive **RAM & Memory Optimizations** for AI stem separation.
+
+### ✨ Features & Enhancements
+- **DAW Multi-Track Studio & STEM Mixer:** A standalone studio page with hardware-synchronized multi-track audio playback, real dual-mirrored canvas waveforms, per-track wedge volume faders, Solo/Mute controls, and precision time tracking (`00:09.2`). Auto-opens immediately upon extraction completion.
+- **Sample-Accurate Web Audio Engine:** Completely eliminated stem drift and playback jitter by scheduling all tracks to an exact hardware `AudioContext` timestamp with zero latency offset.
+- **History & Library Dashboard:** Centralized management for all downloads and separated stems with automatic partitioned storage (`~/downloads/remixer-tools/library` and `extractor/`), storage usage metrics, real-time search, filters, and 1-click "Play in DAW Mixer".
+- **Sleek Bottom STEM Player:** Polished floating player with a dedicated Master Volume slider, Spotify-style hover progress bar, and dead-centered transport controls.
+- **RAM & Memory Optimization:** Dramatically reduced memory footprint and eliminated Out-Of-Memory (OOM) crashes during AI extraction via batch size clamping (`mdxc_batch_size 1`, `mdx_batch_size 1`, `vr_batch_size 1`), Demucs segment size correction (seconds vs frames), capped shifts, FP16 autocast, chunking, thread limit enforcement, and ONNX DirectML execution provider fallback on Windows.
+- **Memory Saver Mode:** Added a dedicated low-memory toggle with recommended lightweight presets for systems with limited RAM/VRAM.
+- **Title Tag Resilient Stem Parsing:** Robust regex detection that cleanly handles song titles with parentheses (e.g. `(Live)`, `(Remix)`, `(Official Audio)`) without key or name collisions.
+
+---
+See the assets below to download this version.
+The Windows portable executable requires the Microsoft Edge WebView2 Runtime.
+
+**Full Changelog**: https://github.com/neondeveloperz/remixer-tools/compare/v0.3.0...v0.3.1
+
 ## 🚀 What's New in v0.3.0
 
 This major update introduces the **AI Model Store**, a brand new **Global Stem Player UI**, theme customization (Light & Dark modes), and extensive cross-platform performance enhancements for macOS and Windows!

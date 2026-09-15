@@ -103,6 +103,25 @@ struct AppSettings {
     filename_template: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StorageDirs {
+    pub base_dir: String,
+    pub library_dir: String,
+    pub extractor_dir: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StorageFileItem {
+    pub name: String,
+    pub path: String,
+    pub size_bytes: u64,
+    pub modified_time: u64,
+    pub category: String, // "download" | "stem"
+    pub extension: String,
+    pub stem_type: Option<String>,
+    pub parent_group: Option<String>,
+}
+
 fn get_settings_path(app: &tauri::AppHandle) -> std::path::PathBuf {
     app.path()
         .app_local_data_dir()
@@ -110,20 +129,70 @@ fn get_settings_path(app: &tauri::AppHandle) -> std::path::PathBuf {
         .join("settings.json")
 }
 
+pub fn get_storage_dirs_internal(app: &tauri::AppHandle) -> StorageDirs {
+    let settings = get_settings(app.clone()).unwrap_or_default();
+    let base = if settings.download_dir.is_empty() {
+        if let Ok(p) = app.path().download_dir() {
+            p.join("remixer-tools")
+        } else {
+            std::env::current_dir().unwrap_or_default().join("remixer-tools")
+        }
+    } else {
+        std::path::PathBuf::from(&settings.download_dir)
+    };
+
+    let library = base.join("library");
+    let extractor = base.join("extractor");
+
+    let _ = std::fs::create_dir_all(&base);
+    let _ = std::fs::create_dir_all(&library);
+    let _ = std::fs::create_dir_all(&extractor);
+
+    StorageDirs {
+        base_dir: base.to_string_lossy().to_string(),
+        library_dir: library.to_string_lossy().to_string(),
+        extractor_dir: extractor.to_string_lossy().to_string(),
+    }
+}
+
 #[tauri::command]
 fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
+    let default_base_dir = if let Ok(path) = app.path().download_dir() {
+        path.join("remixer-tools").to_string_lossy().to_string()
+    } else {
+        std::env::current_dir()
+            .unwrap_or_default()
+            .join("remixer-tools")
+            .to_string_lossy()
+            .to_string()
+    };
+
     let settings_path = get_settings_path(&app);
-    if let Ok(content) = std::fs::read_to_string(settings_path) {
-        if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
+    if let Ok(content) = std::fs::read_to_string(&settings_path) {
+        if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
+            // Auto-migrate if download_dir was empty or raw downloads folder
+            let should_migrate = if settings.download_dir.is_empty() {
+                true
+            } else if let Ok(dl_path) = app.path().download_dir() {
+                let dl_str = dl_path.to_string_lossy().to_string();
+                settings.download_dir == dl_str
+            } else {
+                false
+            };
+
+            if should_migrate {
+                settings.download_dir = default_base_dir.clone();
+                let _ = serde_json::to_string(&settings)
+                    .map(|json| std::fs::write(&settings_path, json));
+            }
+
             return Ok(settings);
         }
     }
 
     // Default
     let mut default_settings = AppSettings::default();
-    if let Ok(path) = app.path().download_dir() {
-        default_settings.download_dir = path.to_string_lossy().to_string();
-    }
+    default_settings.download_dir = default_base_dir;
     default_settings.filename_template = Some("%(title)s.%(ext)s".to_string());
 
     Ok(default_settings)
@@ -169,33 +238,179 @@ async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String, St
 
 #[tauri::command]
 fn get_download_dir(app: tauri::AppHandle) -> Result<String, String> {
-    Ok(get_settings(app)?.download_dir)
+    Ok(get_storage_dirs_internal(&app).library_dir)
 }
 
 #[tauri::command]
-fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
-    let dir = get_download_dir(app)?;
-    if !dir.is_empty() {
+fn get_storage_dirs(app: tauri::AppHandle) -> Result<StorageDirs, String> {
+    Ok(get_storage_dirs_internal(&app))
+}
+
+#[tauri::command]
+fn open_storage_folder(app: tauri::AppHandle, folder_type: String) -> Result<(), String> {
+    let dirs = get_storage_dirs_internal(&app);
+    let target = match folder_type.as_str() {
+        "library" => dirs.library_dir,
+        "extractor" => dirs.extractor_dir,
+        _ => dirs.base_dir,
+    };
+
+    if !target.is_empty() {
+        let _ = std::fs::create_dir_all(&target);
         #[cfg(target_os = "windows")]
         std::process::Command::new("explorer")
             .hide_window()
-            .arg(dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "macos")]
         std::process::Command::new("open")
             .hide_window()
-            .arg(dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "linux")]
         std::process::Command::new("xdg-open")
             .hide_window()
-            .arg(dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
+    open_storage_folder(app, "library".to_string())
+}
+
+fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: usize, items: &mut Vec<StorageFileItem>) {
+    if depth > 3 {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir_path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                if !dir_name.starts_with('.') && dir_name != "library" && dir_name != "extractor" {
+                    scan_folder_recursive(&path, category, depth + 1, items);
+                }
+            } else if path.is_file() {
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+                if name.starts_with('.') {
+                    continue;
+                }
+                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov") {
+                    let (size_bytes, modified_time) = if let Ok(meta) = path.metadata() {
+                        let size = meta.len();
+                        let mod_time = meta.modified().ok()
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        (size, mod_time)
+                    } else {
+                        (0, 0)
+                    };
+
+                    let stem_type = if category == "stem" {
+                        name.rfind("_(").and_then(|start| {
+                            let after = &name[start + 2..];
+                            after.find(')').map(|end| after[..end].to_string())
+                        })
+                    } else {
+                        None
+                    };
+
+                    let parent_group = if category == "stem" {
+                        let group = if let Some(idx) = name.rfind("_(") {
+                            name[..idx].to_string()
+                        } else {
+                            name.clone()
+                        };
+                        Some(group)
+                    } else {
+                        None
+                    };
+
+                    let full_path_str = path.to_string_lossy().to_string();
+                    if !items.iter().any(|existing| existing.path == full_path_str) {
+                        items.push(StorageFileItem {
+                            name,
+                            path: full_path_str,
+                            size_bytes,
+                            modified_time,
+                            category: category.to_string(),
+                            extension: ext,
+                            stem_type,
+                            parent_group,
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
+fn list_storage_files(app: tauri::AppHandle) -> Result<Vec<StorageFileItem>, String> {
+    let dirs = get_storage_dirs_internal(&app);
+    let mut items = Vec::new();
+
+    let library_path = std::path::PathBuf::from(&dirs.library_dir);
+    let extractor_path = std::path::PathBuf::from(&dirs.extractor_dir);
+    let base_path = std::path::PathBuf::from(&dirs.base_dir);
+
+    scan_folder_recursive(&library_path, "download", 0, &mut items);
+    scan_folder_recursive(&extractor_path, "stem", 0, &mut items);
+
+    // Also scan any root files directly in base_dir
+    if let Ok(entries) = std::fs::read_dir(&base_path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                let name = p.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+                if !name.starts_with('.') {
+                    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                    if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov") {
+                        let size_bytes = p.metadata().map(|m| m.len()).unwrap_or(0);
+                        let modified_time = p.metadata().ok()
+                            .and_then(|m| m.modified().ok())
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        let full_path_str = p.to_string_lossy().to_string();
+                        if !items.iter().any(|existing| existing.path == full_path_str) {
+                            items.push(StorageFileItem {
+                                name,
+                                path: full_path_str,
+                                size_bytes,
+                                modified_time,
+                                category: "download".to_string(),
+                                extension: ext,
+                                stem_type: None,
+                                parent_group: None,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    items.sort_by(|a, b| b.modified_time.cmp(&a.modified_time));
+
+    Ok(items)
+}
+
+#[tauri::command]
+fn delete_storage_file(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if p.exists() && p.is_file() {
+        std::fs::remove_file(p).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -206,6 +421,8 @@ fn set_download_dir(app: tauri::AppHandle, dir: String) -> Result<(), String> {
     settings.download_dir = dir;
     let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
     std::fs::write(get_settings_path(&app), json).map_err(|e| e.to_string())?;
+    // Pre-create library and extractor in new base dir
+    let _ = get_storage_dirs_internal(&app);
     Ok(())
 }
 
@@ -821,6 +1038,13 @@ except Exception:
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StemExtractResult {
+    pub success: bool,
+    pub input_file: String,
+    pub output_files: Vec<String>,
+}
+
 #[tauri::command]
 async fn run_stem_extractor(
     app: tauri::AppHandle,
@@ -853,7 +1077,7 @@ async fn run_stem_extractor(
 
     ensure_separator_dml_patch(&python_path);
 
-    let target_dir = get_settings(app.clone()).unwrap_or_default().download_dir;
+    let target_dir = get_storage_dirs_internal(&app).extractor_dir;
     let models_dir = get_models_dir(&app);
 
     app.emit(
@@ -866,6 +1090,19 @@ async fn run_stem_extractor(
     let app_dir_clone = app_dir.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
+        let start_time = std::time::SystemTime::now();
+        let out_dir = if target_dir.is_empty() {
+            std::env::current_dir().unwrap_or_default()
+        } else {
+            std::path::PathBuf::from(&target_dir)
+        };
+        let input_file_path = std::path::PathBuf::from(&input_file);
+        let input_stem = input_file_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_string();
+
         let mut cmd = std::process::Command::new(&separator_path).hide_window();
 
         // Add ffmpeg to PATH so audio-separator can find it
@@ -1004,12 +1241,30 @@ async fn run_stem_extractor(
             }
         };
 
+        let logged_files: std::sync::Arc<std::sync::Mutex<Vec<String>>> =
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let logged_files_out = logged_files.clone();
+        let logged_files_err = logged_files.clone();
+
         let stdout = child.stdout.take().unwrap();
         let app_stdout = app_clone.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
+                    if let Some(pos) = line.find("Exported audio file successfully to ") {
+                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                        let file_path = if let Some(idx) = rest.find(" with ") {
+                            rest[..idx].trim()
+                        } else {
+                            rest.trim()
+                        };
+                        if !file_path.is_empty() {
+                            if let Ok(mut list) = logged_files_out.lock() {
+                                list.push(file_path.to_string());
+                            }
+                        }
+                    }
                     let _ = app_stdout.emit("stem-extract-log", line);
                 }
             }
@@ -1021,16 +1276,79 @@ async fn run_stem_extractor(
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
+                    if let Some(pos) = line.find("Exported audio file successfully to ") {
+                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                        let file_path = if let Some(idx) = rest.find(" with ") {
+                            rest[..idx].trim()
+                        } else {
+                            rest.trim()
+                        };
+                        if !file_path.is_empty() {
+                            if let Ok(mut list) = logged_files_err.lock() {
+                                list.push(file_path.to_string());
+                            }
+                        }
+                    }
                     let _ = app_stderr.emit("stem-extract-log", line);
                 }
             }
         });
 
-        if let Ok(status) = child.wait() {
-            let _ = app_clone.emit("stem-extract-done", status.success());
-        } else {
-            let _ = app_clone.emit("stem-extract-done", false);
+        let success = match child.wait() {
+            Ok(status) => status.success(),
+            Err(_) => false,
+        };
+
+        let mut output_files: Vec<String> = Vec::new();
+
+        if success {
+            if let Ok(list) = logged_files.lock() {
+                for path_str in list.iter() {
+                    let p = std::path::PathBuf::from(path_str);
+                    if p.exists() {
+                        let canonical = p.to_string_lossy().to_string();
+                        if !output_files.contains(&canonical) {
+                            output_files.push(canonical);
+                        }
+                    }
+                }
+            }
+
+            if let Ok(entries) = std::fs::read_dir(&out_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Ok(metadata) = path.metadata() {
+                            let is_recent = metadata.modified().map(|m| {
+                                m >= start_time - std::time::Duration::from_secs(15)
+                            }).unwrap_or(false);
+
+                            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                            let is_audio = matches!(ext.as_str(), "flac" | "wav" | "mp3" | "ogg" | "m4a");
+
+                            if is_audio && is_recent && (name.starts_with(&input_stem) || (name.contains("_(") && name.contains(")_"))) {
+                                let full_str = path.to_string_lossy().to_string();
+                                if !output_files.contains(&full_str) {
+                                    output_files.push(full_str);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            output_files.sort();
         }
+
+        let result = StemExtractResult {
+            success,
+            input_file: input_file.clone(),
+            output_files,
+        };
+
+        let _ = app_clone.emit("stem-extract-result", result);
+        let _ = app_clone.emit("stem-extract-done", success);
     });
 
     Ok(())
@@ -1405,6 +1723,10 @@ pub fn run() {
             set_download_dir,
             set_filename_template,
             get_settings,
+            get_storage_dirs,
+            open_storage_folder,
+            list_storage_files,
+            delete_storage_file,
             setup_dependencies,
             get_video_info,
             setup_stem_extractor,
