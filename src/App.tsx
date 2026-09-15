@@ -13,6 +13,7 @@ import { DependencyCheck } from "@/components/dependency-check"
 import { Help } from "@/components/help"
 import { StemExtractor } from "@/components/stem-extractor"
 import { ModelStore } from "@/components/model-store"
+import { StemMixerPage } from "@/components/stem-mixer-page"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
 
@@ -40,6 +41,7 @@ function AppContent() {
     switch (activePage) {
       case "downloader": return "Downloader"
       case "stem-extractor": return "STEM Extractor"
+      case "stem-mixer": return "STEM Mixer Studio"
       case "model-store": return "AI Model Store"
       case "settings": return "Settings"
       case "help": return "Help & Documentation"
@@ -75,6 +77,12 @@ function AppContent() {
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
                       onNavigateToModelStore={() => setActivePage("model-store")}
+                      onExtractionComplete={() => setActivePage("stem-mixer")}
+                    />
+                  </div>
+                  <div className={activePage === "stem-mixer" ? "block" : "hidden"}>
+                    <StemMixerPage
+                      onNavigateToExtractor={() => setActivePage("stem-extractor")}
                     />
                   </div>
                   <div className={activePage === "model-store" ? "block" : "hidden"}>

@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -17,9 +19,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FolderOpenIcon, Music, Loader2, Store } from "lucide-react";
-import { usePlayer } from "@/contexts/PlayerContext";
+import {
+  FolderOpenIcon,
+  Music,
+  Loader2,
+  Store,
+  Zap,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Mic,
+  Disc3,
+  Activity,
+  FolderOpen,
+  Sliders,
+} from "lucide-react";
+import { usePlayer, type TrackInfo, getTrackKey } from "@/contexts/PlayerContext";
+import { extractStemName } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { DawTrackMixer } from "@/components/daw-track-mixer";
 import rawCatalog from "@/lib/model-catalog.json";
 
 interface ProgressPayload {
@@ -42,6 +61,8 @@ interface StemExtractorProps {
   selectedModel?: string;
   onModelChange?: (model: string) => void;
   onNavigateToModelStore?: () => void;
+  initialInputFile?: string;
+  onExtractionComplete?: () => void;
 }
 
 export function StemExtractor({
@@ -49,8 +70,12 @@ export function StemExtractor({
   selectedModel,
   onModelChange,
   onNavigateToModelStore,
+  initialInputFile,
+  onExtractionComplete,
 }: StemExtractorProps) {
   const player = usePlayer();
+  const onExtractionCompleteRef = useRef(onExtractionComplete);
+  onExtractionCompleteRef.current = onExtractionComplete;
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [isReady, setIsReady] = useState(false);
 
@@ -61,8 +86,14 @@ export function StemExtractor({
   }, [isSettingUp, onBusyChange]);
   const [setupLog, setSetupLog] = useState<string[]>([]);
   const [progresses, setProgresses] = useState<Record<string, number>>({});
-  
-  const [inputFile, setInputFile] = useState("");
+
+  const [inputFile, setInputFile] = useState(initialInputFile || "");
+
+  useEffect(() => {
+    if (initialInputFile) {
+      setInputFile(initialInputFile);
+    }
+  }, [initialInputFile]);
   const [internalModel, setInternalModel] = useState("htdemucs.yaml");
   const model = selectedModel !== undefined ? selectedModel : internalModel;
   const setModel = (m: string) => {
@@ -148,9 +179,64 @@ export function StemExtractor({
   const [overlap, setOverlap] = useState("4");
   const [segmentSize, setSegmentSize] = useState("256");
   const [useGpu, setUseGpu] = useState(true);
+  const [lowMemory, setLowMemory] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [extractedTracks, setExtractedTracks] = useState<TrackInfo[]>([]);
+
+  const activeTracks = extractedTracks.length > 0 ? extractedTracks : player.tracks;
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getStemBadgeStyle = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes("vocal")) {
+      return {
+        bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+        icon: Mic,
+      };
+    }
+    if (lower.includes("drum")) {
+      return {
+        bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+        icon: Disc3,
+      };
+    }
+    if (lower.includes("bass")) {
+      return {
+        bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+        icon: Activity,
+      };
+    }
+    if (lower.includes("guitar")) {
+      return {
+        bg: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+        icon: Music,
+      };
+    }
+    if (lower.includes("piano")) {
+      return {
+        bg: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+        icon: Music,
+      };
+    }
+    if (lower.includes("instrumental") || lower.includes("inst")) {
+      return {
+        bg: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
+        icon: Music,
+      };
+    }
+    return {
+      bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+      icon: Music,
+    };
+  };
 
   const setupStarted = useRef(false);
 
@@ -172,6 +258,26 @@ export function StemExtractor({
       setIsExtracting(false);
       setExtractLog(prev => [...prev, event.payload ? "Extraction Complete!" : "Extraction Failed!"]);
     });
+
+    const unlistenExtractResult = listen<{ success: boolean; input_file: string; output_files: string[] }>(
+      "stem-extract-result",
+      (event) => {
+        if (event.payload.success && event.payload.output_files.length > 0) {
+          const newTracks: TrackInfo[] = event.payload.output_files.map((path) => {
+            const parts = path.split(/[/\\]/);
+            const filename = parts[parts.length - 1];
+            const stemName = extractStemName(filename);
+            return {
+              name: stemName,
+              path,
+            };
+          });
+          setExtractedTracks(newTracks);
+          player.loadTracks(newTracks);
+          onExtractionCompleteRef.current?.();
+        }
+      }
+    );
 
     const unlistenSetupProgress = listen<ProgressPayload>("setup-progress", (event) => {
       setProgresses((prev) => {
@@ -216,6 +322,7 @@ export function StemExtractor({
       unlistenSetup.then(fn => fn());
       unlistenExtract.then(fn => fn());
       unlistenExtractDone.then(fn => fn());
+      unlistenExtractResult.then(fn => fn());
       unlistenSetupProgress.then(fn => fn());
       unlistenDragDrop.then(fn => fn());
     };
@@ -244,13 +351,14 @@ export function StemExtractor({
     setIsExtracting(true);
     setExtractLog([]);
     try {
-      await invoke("run_stem_extractor", { 
-        inputFile, 
-        model, 
-        outputFormat, 
+      await invoke("run_stem_extractor", {
+        inputFile,
+        model,
+        outputFormat,
         useGpu,
         overlap,
-        segmentSize
+        segmentSize,
+        lowMemory,
       });
     } catch (e) {
       setExtractLog(prev => [...prev, `Error: ${e}`]);
@@ -263,7 +371,7 @@ export function StemExtractor({
       <Card className="w-full max-w-3xl mx-auto mt-10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" /> 
+            <Loader2 className="h-5 w-5 animate-spin" />
             Initializing STEM Extractor
           </CardTitle>
           <CardDescription>We are setting up the AI environment. This may take a few minutes if downloading models for the first time.</CardDescription>
@@ -312,184 +420,231 @@ export function StemExtractor({
     <div className="relative">
       <Card className={`w-full transition-colors duration-200 ${isDraggingFile ? "border-primary border-2 border-dashed bg-primary/5" : ""}`}>
         <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Music className="w-5 h-5" /> STEM Extractor</CardTitle>
-        <CardDescription>Separate vocals and instruments using UVR-compatible AI models.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label>Audio File</Label>
-          <div className="flex gap-2">
-            <Input 
-              readOnly 
-              value={inputFile} 
-              placeholder="Select an audio or video file..." 
-              className="font-mono text-sm text-muted-foreground"
-            />
-            <Button variant="outline" onClick={selectFile} disabled={isExtracting}>
-              <FolderOpenIcon className="mr-2 h-4 w-4" />
-              Browse
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-6 space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>AI Model</Label>
-              {onNavigateToModelStore && (
-                <button
-                  type="button"
-                  onClick={onNavigateToModelStore}
-                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                >
-                  <Store className="w-3.5 h-3.5" /> Browse Model Store
-                </button>
-              )}
+          <CardTitle className="flex items-center gap-2"><Music className="w-5 h-5" /> STEM Extractor</CardTitle>
+          <CardDescription>Separate vocals and instruments using UVR-compatible AI models.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Audio File</Label>
+            <div className="flex gap-2">
+              <Input
+                readOnly
+                value={inputFile}
+                placeholder="Select an audio or video file..."
+                className="font-mono text-sm text-muted-foreground"
+              />
+              <Button variant="outline" onClick={selectFile} disabled={isExtracting}>
+                <FolderOpenIcon className="mr-2 h-4 w-4" />
+                Browse
+              </Button>
             </div>
-            <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select AI Model" />
-              </SelectTrigger>
-              <SelectContent
-                side="bottom"
-                align="start"
-                alignItemWithTrigger={false}
-                sideOffset={6}
-                className="w-(--anchor-width) min-w-[340px] max-h-80 p-1.5 shadow-xl border border-border/80"
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-6 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>AI Model</Label>
+                {onNavigateToModelStore && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToModelStore}
+                    className="text-xs text-primary hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                  >
+                    <Store className="w-3.5 h-3.5" /> Browse Model Store
+                  </button>
+                )}
+              </div>
+              <Select value={model} onValueChange={(val) => { if (val) setModel(val); }} disabled={isExtracting}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select AI Model" />
+                </SelectTrigger>
+                <SelectContent
+                  side="bottom"
+                  align="start"
+                  alignItemWithTrigger={false}
+                  sideOffset={6}
+                  className="w-(--anchor-width) min-w-[340px] max-h-80 p-1.5 shadow-xl border border-border/80"
+                >
+                  {Object.entries(groupedModelOptions).map(([groupName, items], idx) => (
+                    <SelectGroup key={groupName}>
+                      {idx > 0 && <SelectSeparator className="my-1.5" />}
+                      <SelectLabel className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        {groupName}
+                      </SelectLabel>
+                      {items.map((opt) => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                          className="py-2 px-2.5 cursor-pointer rounded-md transition-colors"
+                        >
+                          <span className="truncate text-sm font-medium" title={opt.label}>
+                            {opt.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label>Output Format</Label>
+              <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FLAC">FLAC</SelectItem>
+                  <SelectItem value="MP3">MP3</SelectItem>
+                  <SelectItem value="WAV">WAV</SelectItem>
+                  <SelectItem value="OGG">OGG</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label>Overlap</Label>
+              <Select value={overlap} onValueChange={(val) => { if (val) setOverlap(val); }} disabled={isExtracting}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Overlap" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 (Fast / Low RAM)</SelectItem>
+                  <SelectItem value="4">4 (Default / Balanced)</SelectItem>
+                  <SelectItem value="6">6 (High Quality)</SelectItem>
+                  <SelectItem value="8">8 (Higher Quality)</SelectItem>
+                  <SelectItem value="10">10 (Maximum)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label>Segment</Label>
+              <Select value={segmentSize} onValueChange={(val) => { if (val) setSegmentSize(val); }} disabled={isExtracting}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Segment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="128">128 (Ultra Low RAM)</SelectItem>
+                  <SelectItem value="256">256 (Default / Balanced)</SelectItem>
+                  <SelectItem value="512">512 (High Quality)</SelectItem>
+                  <SelectItem value="768">768 (Heavy RAM)</SelectItem>
+                  <SelectItem value="1024">1024 (Max - High RAM)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 bg-muted/40 p-3 rounded-lg border border-border/60">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-gpu"
+                checked={useGpu}
+                onCheckedChange={(checked) => setUseGpu(checked as boolean)}
+                disabled={isExtracting}
+              />
+              <Label htmlFor="use-gpu" className="font-medium cursor-pointer text-sm">
+                Enable GPU Acceleration (DirectML / CUDA)
+              </Label>
+            </div>
+
+            <div className="flex items-start space-x-2.5">
+              <Checkbox
+                id="low-memory"
+                checked={lowMemory}
+                onCheckedChange={(checked) => {
+                  const isChecked = checked as boolean;
+                  setLowMemory(isChecked);
+                  if (isChecked) {
+                    if (segmentSize === "512" || segmentSize === "768" || segmentSize === "1024") {
+                      setSegmentSize("256");
+                    }
+                  }
+                }}
+                disabled={isExtracting}
+                className="mt-0.5"
+              />
+              <div className="grid gap-1 leading-none">
+                <Label htmlFor="low-memory" className="font-medium cursor-pointer text-sm flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  Memory Saver Mode
+                  <span className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold px-1.5 py-0.5 rounded">
+                    Recommended
+                  </span>
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="flex-1 font-semibold">
+              {isExtracting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing (This will take a while)...</>
+              ) : (
+                "Extract STEMs"
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={isExtracting}
+              onClick={async () => {
+                try {
+                  const { open } = await import("@tauri-apps/plugin-dialog");
+                  const selected = await open({
+                    multiple: true,
+                    filters: [{ name: "Audio", extensions: ["mp3", "wav", "flac", "ogg", "m4a"] }],
+                  });
+
+                  if (selected && Array.isArray(selected) && selected.length > 0) {
+                    const tracks: TrackInfo[] = selected.map((path) => {
+                      const parts = path.split(/[/\\]/);
+                      const filename = parts[parts.length - 1];
+                      const stemName = extractStemName(filename);
+                      return { name: stemName, path };
+                    });
+                    setExtractedTracks(tracks);
+                    player.loadTracks(tracks);
+                    onExtractionCompleteRef.current?.();
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+              className="gap-1.5"
+            >
+              <Music className="h-4 w-4" /> Load Stems to Mixer
+            </Button>
+            {onExtractionComplete && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onExtractionComplete}
+                className="gap-1.5"
               >
-                {Object.entries(groupedModelOptions).map(([groupName, items], idx) => (
-                  <SelectGroup key={groupName}>
-                    {idx > 0 && <SelectSeparator className="my-1.5" />}
-                    <SelectLabel className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      {groupName}
-                    </SelectLabel>
-                    {items.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        className="py-2 px-2.5 cursor-pointer rounded-md transition-colors"
-                      >
-                        <span className="truncate text-sm font-medium" title={opt.label}>
-                          {opt.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="md:col-span-2 space-y-2">
-            <Label>Output Format</Label>
-            <Select value={outputFormat} onValueChange={(val) => { if (val) setOutputFormat(val); }} disabled={isExtracting}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="FLAC">FLAC</SelectItem>
-                <SelectItem value="MP3">MP3</SelectItem>
-                <SelectItem value="WAV">WAV</SelectItem>
-                <SelectItem value="OGG">OGG</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <Label>Overlap</Label>
-            <Select value={overlap} onValueChange={(val) => { if (val) setOverlap(val); }} disabled={isExtracting}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Overlap" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2">2 (Fast)</SelectItem>
-                <SelectItem value="4">4 (Default)</SelectItem>
-                <SelectItem value="6">6 (High Quality)</SelectItem>
-                <SelectItem value="8">8 (Higher Quality)</SelectItem>
-                <SelectItem value="10">10 (Maximum)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <Label>Segment</Label>
-            <Select value={segmentSize} onValueChange={(val) => { if (val) setSegmentSize(val); }} disabled={isExtracting}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Segment" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="128">128 (Low VRAM)</SelectItem>
-                <SelectItem value="256">256 (Default)</SelectItem>
-                <SelectItem value="512">512</SelectItem>
-                <SelectItem value="768">768</SelectItem>
-                <SelectItem value="1024">1024 (Best Quality)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2 py-2">
-          <Checkbox 
-            id="use-gpu" 
-            checked={useGpu} 
-            onCheckedChange={(checked) => setUseGpu(checked as boolean)} 
-            disabled={isExtracting}
-          />
-          <Label htmlFor="use-gpu" className="font-medium cursor-pointer">
-            Enable GPU Acceleration (DirectML / CUDA)
-          </Label>
-        </div>
-
-        <div className="flex gap-4">
-          <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="flex-1">
-            {isExtracting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing (This will take a while)...</>
-            ) : (
-              "Extract STEMs"
+                <Sliders className="h-4 w-4" /> Open STEM Mixer
+              </Button>
             )}
-          </Button>
-          <Button variant="secondary" onClick={async () => {
-            try {
-              const { open } = await import('@tauri-apps/plugin-dialog');
-              const selected = await open({
-                multiple: true,
-                filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a'] }]
-              });
-              
-              if (selected && Array.isArray(selected) && selected.length > 0) {
-                const tracks = selected.map(path => {
-                  const parts = path.split(/[/\\]/);
-                  const name = parts[parts.length - 1];
-                  return { name, path };
-                });
-                player.loadTracks(tracks);
-              }
-            } catch (e) {
-              console.error(e);
-            }
-          }}>
-             <Music className="mr-2 h-4 w-4" /> Play Stems
-          </Button>
-        </div>
-
-        {extractLog.length > 0 && (
-          <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-xs whitespace-pre-wrap flex flex-col">
-            {extractLog.map((log, i) => <div key={i}>{log}</div>)}
           </div>
-        )}
-      </CardContent>
-    </Card>
 
-    {/* Overlay for drag and drop */}
-    {isDraggingFile && (
-      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-primary pointer-events-none">
-        <div className="p-4 bg-primary/10 rounded-full mb-4">
-          <Music className="w-12 h-12 text-primary" />
+          {extractLog.length > 0 && (
+            <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-xs whitespace-pre-wrap flex flex-col">
+              {extractLog.map((log, i) => <div key={i}>{log}</div>)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Overlay for drag and drop */}
+      {isDraggingFile && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-primary pointer-events-none">
+          <div className="p-4 bg-primary/10 rounded-full mb-4">
+            <Music className="w-12 h-12 text-primary" />
+          </div>
+          <h3 className="text-xl font-bold">Drop Audio File Here</h3>
+          <p className="text-muted-foreground mt-2">Supports MP3, WAV, FLAC, OGG, M4A</p>
         </div>
-        <h3 className="text-xl font-bold">Drop Audio File Here</h3>
-        <p className="text-muted-foreground mt-2">Supports MP3, WAV, FLAC, OGG, M4A</p>
-      </div>
-    )}
+      )}
     </div>
   );
 }
