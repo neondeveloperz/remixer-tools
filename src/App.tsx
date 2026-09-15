@@ -38,7 +38,7 @@ function AppContent() {
 
   const getPageTitle = () => {
     switch (activePage) {
-      case "downloader": return "Video Downloader"
+      case "downloader": return "Downloader"
       case "stem-extractor": return "STEM Extractor"
       case "model-store": return "AI Model Store"
       case "settings": return "Settings"
