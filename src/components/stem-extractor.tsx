@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FolderOpenIcon, Music, Loader2 } from "lucide-react";
+import { usePlayer } from "@/contexts/PlayerContext";
+import { Progress } from "@/components/ui/progress";
+
+interface ProgressPayload {
+  item: string;
+  progress: number;
+}
 
 export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean) => void }) {
+  const player = usePlayer();
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [isReady, setIsReady] = useState(false);
 
@@ -19,6 +28,7 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
     }
   }, [isSettingUp, onBusyChange]);
   const [setupLog, setSetupLog] = useState<string[]>([]);
+  const [progresses, setProgresses] = useState<Record<string, number>>({});
   
   const [inputFile, setInputFile] = useState("");
   const [model, setModel] = useState("htdemucs.yaml");
@@ -28,6 +38,7 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
   const [useGpu, setUseGpu] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const setupStarted = useRef(false);
 
@@ -50,6 +61,36 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
       setExtractLog(prev => [...prev, event.payload ? "Extraction Complete!" : "Extraction Failed!"]);
     });
 
+    const unlistenSetupProgress = listen<ProgressPayload>("setup-progress", (event) => {
+      setProgresses((prev) => {
+        const newProg = { ...prev };
+        if (event.payload.progress >= 100) {
+          delete newProg[event.payload.item];
+        } else {
+          newProg[event.payload.item] = event.payload.progress;
+        }
+        return newProg;
+      });
+    });
+
+    const unlistenDragDrop = getCurrentWebviewWindow().onDragDropEvent((event) => {
+      if (event.payload.type === 'enter' || event.payload.type === 'over') {
+        setIsDraggingFile(true);
+      } else if (event.payload.type === 'leave') {
+        setIsDraggingFile(false);
+      } else if (event.payload.type === 'drop') {
+        setIsDraggingFile(false);
+        const paths = event.payload.paths;
+        if (paths && paths.length > 0) {
+          const path = paths[0];
+          const ext = path.split('.').pop()?.toLowerCase();
+          if (['mp3', 'wav', 'flac', 'ogg', 'm4a'].includes(ext || '')) {
+            setInputFile(path);
+          }
+        }
+      }
+    });
+
     // Start setup check only once
     if (!setupStarted.current) {
       setupStarted.current = true;
@@ -63,6 +104,8 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
       unlistenSetup.then(fn => fn());
       unlistenExtract.then(fn => fn());
       unlistenExtractDone.then(fn => fn());
+      unlistenSetupProgress.then(fn => fn());
+      unlistenDragDrop.then(fn => fn());
     };
   }, []);
 
@@ -114,8 +157,23 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
           <CardDescription>We are setting up the AI environment. This may take a few minutes if downloading models for the first time.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap flex flex-col">
-            {setupLog.map((log, i) => <div key={i}>{log}</div>)}
+          <div className="flex flex-col gap-3">
+            {Object.keys(progresses).length > 0 && (
+              <div className="space-y-2 mb-2">
+                {Object.entries(progresses).map(([item, prog]) => (
+                  <div key={item} className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Downloading {item}...</span>
+                      <span>{prog}%</span>
+                    </div>
+                    <Progress value={prog} className="h-2" />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap flex flex-col">
+              {setupLog.map((log, i) => <div key={i}>{log}</div>)}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -139,8 +197,9 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <div className="relative">
+      <Card className={`w-full transition-colors duration-200 ${isDraggingFile ? "border-primary border-2 border-dashed bg-primary/5" : ""}`}>
+        <CardHeader>
         <CardTitle className="flex items-center gap-2"><Music className="w-5 h-5" /> STEM Extractor</CardTitle>
         <CardDescription>Separate vocals and instruments using UVR-compatible AI models.</CardDescription>
       </CardHeader>
@@ -238,13 +297,37 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
           </Label>
         </div>
 
-        <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="w-full">
-          {isExtracting ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing (This will take a while)...</>
-          ) : (
-            "Extract STEMs"
-          )}
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="flex-1">
+            {isExtracting ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing (This will take a while)...</>
+            ) : (
+              "Extract STEMs"
+            )}
+          </Button>
+          <Button variant="secondary" onClick={async () => {
+            try {
+              const { open } = await import('@tauri-apps/plugin-dialog');
+              const selected = await open({
+                multiple: true,
+                filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a'] }]
+              });
+              
+              if (selected && Array.isArray(selected) && selected.length > 0) {
+                const tracks = selected.map(path => {
+                  const parts = path.split(/[/\\]/);
+                  const name = parts[parts.length - 1];
+                  return { name, path };
+                });
+                player.loadTracks(tracks);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }}>
+             <Music className="mr-2 h-4 w-4" /> Play Stems
+          </Button>
+        </div>
 
         {extractLog.length > 0 && (
           <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-xs whitespace-pre-wrap flex flex-col">
@@ -253,5 +336,17 @@ export function StemExtractor({ onBusyChange }: { onBusyChange?: (busy: boolean)
         )}
       </CardContent>
     </Card>
+
+    {/* Overlay for drag and drop */}
+    {isDraggingFile && (
+      <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl border-2 border-dashed border-primary pointer-events-none">
+        <div className="p-4 bg-primary/10 rounded-full mb-4">
+          <Music className="w-12 h-12 text-primary" />
+        </div>
+        <h3 className="text-xl font-bold">Drop Audio File Here</h3>
+        <p className="text-muted-foreground mt-2">Supports MP3, WAV, FLAC, OGG, M4A</p>
+      </div>
+    )}
+    </div>
   );
 }

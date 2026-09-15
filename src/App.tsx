@@ -12,8 +12,11 @@ import { Settings } from "@/components/settings"
 import { DependencyCheck } from "@/components/dependency-check"
 import { Help } from "@/components/help"
 import { StemExtractor } from "@/components/stem-extractor"
+import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
+import { StemPlayer } from "@/components/stem-player"
 
-export default function App() {
+function AppContent() {
+  const { isVisible } = usePlayer()
   const [activePage, setActivePage] = useState("downloader")
   const [isReady, setIsReady] = useState(false)
   const [isAppBusy, setIsAppBusy] = useState(false)
@@ -40,7 +43,7 @@ export default function App() {
         return <YtDlp />
     }
   }
-  
+
   const getPageTitle = () => {
     switch (activePage) {
       case "downloader": return "Video Downloader"
@@ -55,6 +58,7 @@ export default function App() {
     <TooltipProvider>
       {!isReady && <DependencyCheck onComplete={() => setIsReady(true)} />}
       <SidebarProvider
+        className="transition-all duration-300"
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -74,8 +78,18 @@ export default function App() {
               </div>
             </div>
           </div>
+          {isVisible && <div className="h-24 shrink-0" />}
         </SidebarInset>
       </SidebarProvider>
+      <StemPlayer />
     </TooltipProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <PlayerProvider>
+      <AppContent />
+    </PlayerProvider>
   )
 }
