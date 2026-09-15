@@ -26,7 +26,17 @@ async fn download_file_with_progress(
 ) -> Result<Vec<u8>, String> {
     app.emit("setup-progress", ProgressPayload { item: item_name.to_string(), progress: 0 }).unwrap_or(());
     
-    let res = reqwest::get(url).await.map_err(|e| e.to_string())?;
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+        
+    let res = client.get(url).send().await.map_err(|e| e.to_string())?;
+    
+    if !res.status().is_success() {
+        return Err(format!("Download failed with status: {}", res.status()));
+    }
+    
     let total_size = res.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
     let mut stream = res.bytes_stream();
@@ -307,28 +317,38 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
             if cfg!(target_os = "macos") {
                 app.emit("setup-log", "Downloading ffprobe for macOS...").unwrap();
                 let ffprobe_url = "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip";
-                if let Ok(bytes) = download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
-                    if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
-                        for i in 0..archive.len() {
-                            if let Ok(mut file) = archive.by_index(i) {
-                                if file.name() == "ffprobe" {
-                                    let ffprobe_path = app_dir.join("ffprobe");
-                                    if let Ok(mut outfile) = std::fs::File::create(&ffprobe_path) {
-                                        let _ = std::io::copy(&mut file, &mut outfile);
-                                        #[cfg(unix)]
-                                        {
-                                            use std::os::unix::fs::PermissionsExt;
-                                            if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
-                                                let mut perms = meta.permissions();
-                                                perms.set_mode(0o755);
-                                                let _ = std::fs::set_permissions(&ffprobe_path, perms);
+                match download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
+                    Ok(bytes) => {
+                        match zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
+                            Ok(mut archive) => {
+                                for i in 0..archive.len() {
+                                    if let Ok(mut file) = archive.by_index(i) {
+                                        if file.name() == "ffprobe" {
+                                            let ffprobe_path = app_dir.join("ffprobe");
+                                            if let Ok(mut outfile) = std::fs::File::create(&ffprobe_path) {
+                                                let _ = std::io::copy(&mut file, &mut outfile);
+                                                #[cfg(unix)]
+                                                {
+                                                    use std::os::unix::fs::PermissionsExt;
+                                                    if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
+                                                        let mut perms = meta.permissions();
+                                                        perms.set_mode(0o755);
+                                                        let _ = std::fs::set_permissions(&ffprobe_path, perms);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                app.emit("setup-log", "ffprobe installed.").unwrap();
+                            },
+                            Err(e) => {
+                                app.emit("setup-log", format!("Failed to extract ffprobe: {}", e)).unwrap();
                             }
                         }
-                        app.emit("setup-log", "ffprobe installed.").unwrap();
+                    },
+                    Err(e) => {
+                        app.emit("setup-log", format!("Failed to download ffprobe: {}", e)).unwrap();
                     }
                 }
             }
