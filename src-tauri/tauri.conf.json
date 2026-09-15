@@ -18,11 +18,9 @@
         "height": 600,
         "minWidth": 1024,
         "minHeight": 600,
-        "maxWidth": 1024,
-        "maxHeight": 600,
-        "maximizable": false,
+        "maximizable": true,
         "fullscreen": false,
-        "resizable": false,
+        "resizable": true,
         "center": true,
         "visible": false
       }
@@ -31,7 +29,9 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },

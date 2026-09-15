@@ -29,20 +29,7 @@ function AppContent() {
     setActivePage(page);
   }
 
-  const renderContent = () => {
-    switch (activePage) {
-      case "downloader":
-        return <YtDlp />
-      case "stem-extractor":
-        return <StemExtractor onBusyChange={setIsAppBusy} />
-      case "settings":
-        return <Settings />
-      case "help":
-        return <Help />
-      default:
-        return <YtDlp />
-    }
-  }
+
 
   const getPageTitle = () => {
     switch (activePage) {
@@ -72,8 +59,19 @@ function AppContent() {
           <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <div className="px-4 lg:px-6">
-                  {renderContent()}
+                <div className="px-4 lg:px-6 relative min-h-[500px]">
+                  <div className={activePage === "downloader" ? "block" : "hidden"}>
+                    <YtDlp />
+                  </div>
+                  <div className={activePage === "stem-extractor" ? "block" : "hidden"}>
+                    <StemExtractor onBusyChange={setIsAppBusy} />
+                  </div>
+                  <div className={activePage === "settings" ? "block" : "hidden"}>
+                    <Settings />
+                  </div>
+                  <div className={activePage === "help" ? "block" : "hidden"}>
+                    <Help />
+                  </div>
                 </div>
               </div>
             </div>
