@@ -421,12 +421,13 @@ async fn run_ytdlp(
         cmd.arg("--newline");
         cmd.arg("--progress-template").arg(progress_template);
 
-        // Only specify ffmpeg-location if we actually downloaded a real ffmpeg
-        if cfg!(target_os = "windows") {
-            cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
-        } else {
+        // Always specify ffmpeg-location since we download it for all OS
+        cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
+
+        #[cfg(unix)]
+        {
             let current_path = std::env::var("PATH").unwrap_or_default();
-            let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+            let new_path = format!("{}:{}:/opt/homebrew/bin:/usr/local/bin", ffmpeg_dir, current_path);
             cmd.env("PATH", new_path);
         }
 
