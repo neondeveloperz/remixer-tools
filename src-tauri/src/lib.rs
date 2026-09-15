@@ -211,7 +211,21 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
 
     // Check for updates
     app.emit("setup-log", "Checking for yt-dlp updates...").unwrap();
-    let _ = std::process::Command::new(&ytdlp_path).arg("-U").status();
+    if let Ok(output) = std::process::Command::new(&ytdlp_path).arg("-U").output() {
+        let out_str = String::from_utf8_lossy(&output.stdout);
+        let err_str = String::from_utf8_lossy(&output.stderr);
+        let combined = format!("{}{}", out_str, err_str);
+        
+        if combined.contains("403") || combined.contains("rate limit") {
+            app.emit("setup-log", "yt-dlp update skipped (GitHub rate limit exceeded).").unwrap();
+        } else if combined.contains("Up to date") || combined.contains("up to date") {
+            app.emit("setup-log", "yt-dlp is up to date.").unwrap();
+        } else if combined.contains("Updated yt-dlp to") || combined.contains("updated") {
+            app.emit("setup-log", "yt-dlp updated successfully.").unwrap();
+        } else if !output.status.success() {
+            app.emit("setup-log", "yt-dlp update failed, but continuing anyway.").unwrap();
+        }
+    }
 
     app.emit("setup-log", "All dependencies are ready.").unwrap();
     Ok(())
