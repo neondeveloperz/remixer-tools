@@ -834,6 +834,14 @@ async fn run_stem_extractor(
 
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
+        
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Fix for "invalid buffer size" and memory issues on Apple Silicon (M1/M2/M3/M4)
+            cmd.env("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0");
+            cmd.env("PYTORCH_ENABLE_MPS_FALLBACK", "1");
+            cmd.env("COREML_ENABLE_STRICT_SHAPES", "1");
+        }
 
         cmd.arg(&input_file);
         cmd.arg("--model_filename").arg(&model);
