@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon } from "lucide-react"
+import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
   user: {
@@ -61,6 +62,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 };
 
 export function AppSidebar({ activePage, onSelectPage, isBusy, ...props }: AppSidebarProps) {
+  const { isVisible } = usePlayer();
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -80,6 +82,7 @@ export function AppSidebar({ activePage, onSelectPage, isBusy, ...props }: AppSi
         <NavMain items={data.navMain} activeItem={activePage} onSelectItem={onSelectPage} />
         <NavSecondary items={data.navSecondary} activeItem={activePage} onSelectItem={onSelectPage} className="mt-auto" />
       </SidebarContent>
+      {isVisible && <div className="h-24 shrink-0 bg-transparent" />}
     </Sidebar>
   )
 }

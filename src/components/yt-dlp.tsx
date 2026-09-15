@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Pause, X, LayoutList, FolderOpen } from "lucide-react";
+import { Loader2, Pause, Play, X, LayoutList, FolderOpen } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { usePlayer } from "@/contexts/PlayerContext";
 
 interface DownloadItem {
   id: string;
@@ -27,28 +28,30 @@ interface DownloadItem {
   downloaded: string;
   total: string;
   eta: string;
+  filepath?: string;
   status: 'initializing' | 'downloading' | 'completed' | 'error';
   log: string[];
 }
 
 export function YtDlp() {
+  const player = usePlayer();
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState("video");
   const [quality, setQuality] = useState("best");
-  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
-  const [isInitializing, setIsInitializing] = useState(false);
-
-  useEffect(() => {
-    // Load from local storage
+  const [downloads, setDownloads] = useState<DownloadItem[]>(() => {
     const saved = localStorage.getItem("remixer_downloads");
     if (saved) {
       try {
-        setDownloads(JSON.parse(saved));
+        return JSON.parse(saved);
       } catch (e) {
         console.error("Failed to parse saved downloads", e);
       }
     }
+    return [];
+  });
+  const [isInitializing, setIsInitializing] = useState(false);
 
+  useEffect(() => {
     const unlistenProgress = listen<{id: string, data: string}>("ytdlp-progress", (event) => {
       const { id, data } = event.payload;
       try {
@@ -91,10 +94,21 @@ export function YtDlp() {
       }));
     });
 
+    const unlistenFilepath = listen<{id: string, path: string}>("ytdlp-filepath", (event) => {
+      const { id, path } = event.payload;
+      setDownloads(prev => prev.map(d => {
+        if (d.id === id) {
+          return { ...d, filepath: path };
+        }
+        return d;
+      }));
+    });
+
     return () => {
       unlistenProgress.then(fn => fn());
       unlistenLog.then(fn => fn());
       unlistenDone.then(fn => fn());
+      unlistenFilepath.then(fn => fn());
     };
   }, []);
 
@@ -234,9 +248,29 @@ export function YtDlp() {
             <h3 className="text-sm font-medium flex items-center gap-2">
               <LayoutList className="w-4 h-4" /> Download History
             </h3>
-            <Button variant="outline" size="sm" onClick={openDownloadFolder}>
-              <FolderOpen className="w-4 h-4 mr-2" /> Show Folders
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={async () => {
+                try {
+                  const { open } = await import('@tauri-apps/plugin-dialog');
+                  const selected = await open({
+                    multiple: false,
+                    filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a'] }]
+                  });
+                  if (selected && typeof selected === 'string') {
+                    const parts = selected.split(/[/\\]/);
+                    const name = parts[parts.length - 1];
+                    player.loadTracks([{ name, path: selected }]);
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
+              }}>
+                <FolderOpen className="w-4 h-4 mr-2" /> Play File
+              </Button>
+              <Button variant="outline" size="sm" onClick={openDownloadFolder}>
+                <FolderOpen className="w-4 h-4 mr-2" /> Show Folders
+              </Button>
+            </div>
           </div>
           {downloads.map(item => (
             <Card key={item.id} className="overflow-hidden">
@@ -290,9 +324,34 @@ export function YtDlp() {
                     </Button>
                   )}
                   {item.status === 'completed' && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openDownloadFolder} title="Open Folder">
-                      <FolderOpen className="h-4 w-4" />
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={async () => {
+                        if (item.filepath) {
+                          player.loadTracks([{ name: item.title, path: item.filepath }]);
+                        } else {
+                          // Fallback to file picker if filepath wasn't captured
+                          try {
+                            const { open } = await import('@tauri-apps/plugin-dialog');
+                            const selected = await open({
+                              multiple: false,
+                              filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'ogg', 'm4a', 'mp4'] }]
+                            });
+                            if (selected && typeof selected === 'string') {
+                              const parts = selected.split(/[/\\]/);
+                              const name = parts[parts.length - 1];
+                              player.loadTracks([{ name, path: selected }]);
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }
+                      }} title="Play File">
+                        <Play className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openDownloadFolder} title="Open Folder">
+                        <FolderOpen className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
                   {item.status !== 'downloading' && item.status !== 'initializing' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)} title="Remove">
