@@ -303,6 +303,35 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
                 let _ = std::fs::set_permissions(&ffmpeg_path, perms);
             }
             app.emit("setup-log", "ffmpeg installed.").unwrap();
+
+            if cfg!(target_os = "macos") {
+                app.emit("setup-log", "Downloading ffprobe for macOS...").unwrap();
+                let ffprobe_url = "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip";
+                if let Ok(bytes) = download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
+                    if let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
+                        for i in 0..archive.len() {
+                            if let Ok(mut file) = archive.by_index(i) {
+                                if file.name() == "ffprobe" {
+                                    let ffprobe_path = app_dir.join("ffprobe");
+                                    if let Ok(mut outfile) = std::fs::File::create(&ffprobe_path) {
+                                        let _ = std::io::copy(&mut file, &mut outfile);
+                                        #[cfg(unix)]
+                                        {
+                                            use std::os::unix::fs::PermissionsExt;
+                                            if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
+                                                let mut perms = meta.permissions();
+                                                perms.set_mode(0o755);
+                                                let _ = std::fs::set_permissions(&ffprobe_path, perms);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        app.emit("setup-log", "ffprobe installed.").unwrap();
+                    }
+                }
+            }
         }
     }
 
