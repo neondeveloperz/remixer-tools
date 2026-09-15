@@ -26,7 +26,17 @@ async fn download_file_with_progress(
 ) -> Result<Vec<u8>, String> {
     app.emit("setup-progress", ProgressPayload { item: item_name.to_string(), progress: 0 }).unwrap_or(());
     
-    let res = reqwest::get(url).await.map_err(|e| e.to_string())?;
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+        
+    let res = client.get(url).send().await.map_err(|e| e.to_string())?;
+    
+    if !res.status().is_success() {
+        return Err(format!("Download failed with status: {}", res.status()));
+    }
+    
     let total_size = res.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
     let mut stream = res.bytes_stream();
@@ -40,6 +50,15 @@ async fn download_file_with_progress(
         
         if total_size > 0 {
             let percent = ((downloaded as f64 / total_size as f64) * 100.0) as u8;
+            if percent > last_percent {
+                last_percent = percent;
+                let _ = app.emit("setup-progress", ProgressPayload {
+                    item: item_name.to_string(),
+                    progress: percent,
+                });
+            }
+        } else {
+            let percent = std::cmp::min((downloaded / 500_000) as u8, 99);
             if percent > last_percent {
                 last_percent = percent;
                 let _ = app.emit("setup-progress", ProgressPayload {
@@ -303,6 +322,45 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
                 let _ = std::fs::set_permissions(&ffmpeg_path, perms);
             }
             app.emit("setup-log", "ffmpeg installed.").unwrap();
+
+            if cfg!(target_os = "macos") {
+                app.emit("setup-log", "Downloading ffprobe for macOS...").unwrap();
+                let ffprobe_url = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-macos-64.zip";
+                match download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
+                    Ok(bytes) => {
+                        match zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
+                            Ok(mut archive) => {
+                                for i in 0..archive.len() {
+                                    if let Ok(mut file) = archive.by_index(i) {
+                                        if file.name() == "ffprobe" {
+                                            let ffprobe_path = app_dir.join("ffprobe");
+                                            if let Ok(mut outfile) = std::fs::File::create(&ffprobe_path) {
+                                                let _ = std::io::copy(&mut file, &mut outfile);
+                                                #[cfg(unix)]
+                                                {
+                                                    use std::os::unix::fs::PermissionsExt;
+                                                    if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
+                                                        let mut perms = meta.permissions();
+                                                        perms.set_mode(0o755);
+                                                        let _ = std::fs::set_permissions(&ffprobe_path, perms);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                app.emit("setup-log", "ffprobe installed.").unwrap();
+                            },
+                            Err(e) => {
+                                app.emit("setup-log", format!("Failed to extract ffprobe: {}", e)).unwrap();
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        app.emit("setup-log", format!("Failed to download ffprobe: {}", e)).unwrap();
+                    }
+                }
+            }
         }
     }
 
@@ -363,12 +421,13 @@ async fn run_ytdlp(
         cmd.arg("--newline");
         cmd.arg("--progress-template").arg(progress_template);
 
-        // Only specify ffmpeg-location if we actually downloaded a real ffmpeg
-        if cfg!(target_os = "windows") {
-            cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
-        } else {
+        // Always specify ffmpeg-location since we download it for all OS
+        cmd.arg("--ffmpeg-location").arg(&ffmpeg_dir);
+
+        #[cfg(unix)]
+        {
             let current_path = std::env::var("PATH").unwrap_or_default();
-            let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+            let new_path = format!("{}:{}:/opt/homebrew/bin:/usr/local/bin", ffmpeg_dir, current_path);
             cmd.env("PATH", new_path);
         }
 
@@ -771,10 +830,18 @@ async fn run_stem_extractor(
         #[cfg(target_os = "windows")]
         let new_path = format!("{};{}", app_dir_clone.to_string_lossy(), current_path);
         #[cfg(not(target_os = "windows"))]
-        let new_path = format!("{}:/opt/homebrew/bin:/usr/local/bin", current_path);
+        let new_path = format!("{}:{}:/opt/homebrew/bin:/usr/local/bin", app_dir_clone.to_string_lossy(), current_path);
 
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
+        
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Fix for "invalid buffer size" and memory issues on Apple Silicon (M1/M2/M3/M4)
+            cmd.env("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0");
+            cmd.env("PYTORCH_ENABLE_MPS_FALLBACK", "1");
+            cmd.env("COREML_ENABLE_STRICT_SHAPES", "1");
+        }
 
         cmd.arg(&input_file);
         cmd.arg("--model_filename").arg(&model);

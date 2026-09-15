@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Play, Pause, X, Volume2, VolumeX, Headphones, FastForward, Rewind, Music } from "lucide-react";
+import { Play, Pause, X, Volume2, VolumeX, FastForward, Rewind, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TrackState {
@@ -21,7 +21,7 @@ export function StemPlayer() {
   const [trackStates, setTrackStates] = useState<Record<string, TrackState>>({});
   
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(0);
   const isDraggingRef = useRef(false);
 
   // Initialize track states when tracks change
@@ -84,13 +84,13 @@ export function StemPlayer() {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeekDrag = (value: readonly number[]) => {
+  const handleSeekDrag = (value: number | readonly number[]) => {
     isDraggingRef.current = true;
-    setCurrentTime(value[0]);
+    setCurrentTime(Array.isArray(value) ? value[0] : value);
   };
 
-  const handleSeekCommit = (value: readonly number[]) => {
-    const time = value[0];
+  const handleSeekCommit = (value: number | readonly number[]) => {
+    const time = Array.isArray(value) ? value[0] : value;
     setCurrentTime(time);
     Object.values(audioRefs.current).forEach(audio => {
       audio.currentTime = time;
@@ -193,20 +193,20 @@ export function StemPlayer() {
       ))}
 
       {/* Progress Bar Absolute at Top */}
-      <div className="w-full absolute top-[-6px] h-3 group flex items-center z-20 px-0">
+      <div className="w-full absolute top-[-6px] h-3 group flex items-center z-[100] px-0">
         <Slider
           value={[currentTime]}
           max={duration || 100}
           step={0.1}
           onValueChange={handleSeekDrag}
-          onValueCommit={handleSeekCommit}
+          onValueCommitted={handleSeekCommit}
           className="w-full cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity [&_[data-slot=slider-track]]:rounded-none [&_[data-slot=slider-track]]:h-1 group-hover:[&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-thumb]]:opacity-0 group-hover:[&_[data-slot=slider-thumb]]:opacity-100"
         />
       </div>
 
-      <div className="flex items-center w-full max-w-screen-2xl mx-auto h-16 px-4 gap-4">
+      <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto h-16 px-4">
         {/* Left: Track Info */}
-        <div className="flex items-center w-1/4 min-w-[200px] gap-3 overflow-hidden">
+        <div className="flex items-center flex-1 min-w-0 gap-3 overflow-hidden pr-4">
           <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center shrink-0">
             <Music className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -217,22 +217,22 @@ export function StemPlayer() {
         </div>
 
         {/* Center: Main Controls */}
-        <div className="flex flex-col items-center justify-center flex-1 max-w-md">
+        <div className="flex flex-col items-center justify-center shrink-0">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => handleSeek([Math.max(0, currentTime - 10)])} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={() => handleSeekCommit([Math.max(0, currentTime - 10)])} className="h-8 w-8 text-muted-foreground hover:text-foreground">
               <Rewind className="h-4 w-4" />
             </Button>
             <Button variant="default" size="icon" className="h-9 w-9 rounded-full hover:scale-105 transition-transform shrink-0" onClick={togglePlayPause}>
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 translate-x-[1px]" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => handleSeek([Math.min(duration, currentTime + 10)])} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={() => handleSeekCommit([Math.min(duration, currentTime + 10)])} className="h-8 w-8 text-muted-foreground hover:text-foreground">
               <FastForward className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         {/* Right: Mixers & Close */}
-        <div className="flex items-center justify-end w-[40%] gap-4 min-w-[300px]">
+        <div className="flex items-center justify-end flex-1 min-w-0 gap-4 pl-4">
           <div className={cn("flex items-center gap-2", isMultiTrack ? "flex-wrap justify-end" : "w-32")}>
             {tracks.map(track => {
               const state = trackStates[track.name] || { volume: 1, muted: false, solo: false };
@@ -255,7 +255,7 @@ export function StemPlayer() {
                     value={[state.volume]}
                     max={1}
                     step={0.01}
-                    onValueChange={(val) => updateTrackState(track.name, { volume: val[0] })}
+                    onValueChange={(val) => updateTrackState(track.name, { volume: Array.isArray(val) ? val[0] : val })}
                     className={cn("flex-1", isEffectivelyMuted && "opacity-50")}
                   />
                 </div>
