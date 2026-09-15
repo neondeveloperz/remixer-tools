@@ -15,6 +15,28 @@ use zip::ZipArchive;
 use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+trait CommandExtForWindows {
+    fn hide_window(self) -> Self;
+}
+
+impl CommandExtForWindows for std::process::Command {
+    #[cfg(target_os = "windows")]
+    fn hide_window(mut self) -> Self {
+        self.creation_flags(CREATE_NO_WINDOW);
+        self
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn hide_window(self) -> Self {
+        self
+    }
+}
+
 #[derive(Serialize, Deserialize, Default)]
 struct AppSettings {
     download_dir: String,
@@ -64,7 +86,7 @@ async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String, St
         app_dir.join("yt-dlp")
     };
     
-    let output = std::process::Command::new(&ytdlp_path)
+    let output = std::process::Command::new(&ytdlp_path).hide_window()
         .arg("--dump-json")
         .arg("--no-warnings")
         .arg(&url)
@@ -90,13 +112,13 @@ fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
     let dir = get_download_dir(app)?;
     if !dir.is_empty() {
         #[cfg(target_os = "windows")]
-        std::process::Command::new("explorer").arg(dir).spawn().map_err(|e| e.to_string())?;
+        std::process::Command::new("explorer").hide_window().arg(dir).spawn().map_err(|e| e.to_string())?;
         
         #[cfg(target_os = "macos")]
-        std::process::Command::new("open").arg(dir).spawn().map_err(|e| e.to_string())?;
+        std::process::Command::new("open").hide_window().arg(dir).spawn().map_err(|e| e.to_string())?;
         
         #[cfg(target_os = "linux")]
-        std::process::Command::new("xdg-open").arg(dir).spawn().map_err(|e| e.to_string())?;
+        std::process::Command::new("xdg-open").hide_window().arg(dir).spawn().map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -211,21 +233,7 @@ async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
 
     // Check for updates
     app.emit("setup-log", "Checking for yt-dlp updates...").unwrap();
-    if let Ok(output) = std::process::Command::new(&ytdlp_path).arg("-U").output() {
-        let out_str = String::from_utf8_lossy(&output.stdout);
-        let err_str = String::from_utf8_lossy(&output.stderr);
-        let combined = format!("{}{}", out_str, err_str);
-        
-        if combined.contains("403") || combined.contains("rate limit") {
-            app.emit("setup-log", "yt-dlp update skipped (GitHub rate limit exceeded).").unwrap();
-        } else if combined.contains("Up to date") || combined.contains("up to date") {
-            app.emit("setup-log", "yt-dlp is up to date.").unwrap();
-        } else if combined.contains("Updated yt-dlp to") || combined.contains("updated") {
-            app.emit("setup-log", "yt-dlp updated successfully.").unwrap();
-        } else if !output.status.success() {
-            app.emit("setup-log", "yt-dlp update failed, but continuing anyway.").unwrap();
-        }
-    }
+    let _ = std::process::Command::new(&ytdlp_path).hide_window().arg("-U").status();
 
     app.emit("setup-log", "All dependencies are ready.").unwrap();
     Ok(())
@@ -261,7 +269,7 @@ async fn run_ytdlp(
     let target_dir_clone = target_dir.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
-        let mut cmd = std::process::Command::new(&ytdlp_path);
+        let mut cmd = std::process::Command::new(&ytdlp_path).hide_window();
         
         // Change working directory to target_dir so files are saved there
         if !target_dir_clone.is_empty() {
@@ -400,7 +408,7 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         app.emit("stem-log", "Extracting Python environment...").unwrap();
         std::fs::create_dir_all(&python_dir).map_err(|e| e.to_string())?;
         
-        let mut tar_cmd = std::process::Command::new("tar");
+        let mut tar_cmd = std::process::Command::new("tar").hide_window();
         tar_cmd.arg("-xzf").arg(&tar_path).arg("-C").arg(&python_dir);
         let tar_status = tar_cmd.status().map_err(|e| format!("Failed to run tar command: {}", e))?;
         
@@ -417,7 +425,7 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         app.emit("stem-log", "Creating Python Virtual Environment... This may take a while.").unwrap();
         
         if !venv_dir.exists() {
-            let status = std::process::Command::new(&python_exe_path)
+            let status = std::process::Command::new(&python_exe_path).hide_window()
                 .arg("-m")
                 .arg("venv")
                 .arg(&venv_dir)
@@ -438,12 +446,12 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         };
         
         // 1. Uninstall CPU version of onnxruntime if it exists to prevent conflicts
-        let mut cmd_rm = std::process::Command::new(&pip_path);
+        let mut cmd_rm = std::process::Command::new(&pip_path).hide_window();
         cmd_rm.arg("uninstall").arg("-y").arg("onnxruntime");
         let _ = cmd_rm.status();
 
         // 2. Install PyTorch with or without CUDA
-        let mut cmd_torch = std::process::Command::new(&pip_path);
+        let mut cmd_torch = std::process::Command::new(&pip_path).hide_window();
         if cfg!(target_os = "windows") {
             app.emit("stem-log", "Installing PyTorch with CUDA (approx 2.5GB)...").unwrap();
             cmd_torch.arg("install")
@@ -490,7 +498,7 @@ async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         }
 
         // 3. Install audio-separator and onnxruntime
-        let mut cmd = std::process::Command::new(&pip_path);
+        let mut cmd = std::process::Command::new(&pip_path).hide_window();
         if cfg!(target_os = "windows") {
             app.emit("stem-log", "Installing audio-separator and ONNX Runtime DirectML...").unwrap();
             cmd.arg("install")
@@ -577,7 +585,7 @@ async fn run_stem_extractor(
     let app_dir_clone = app_dir.clone();
     
     tauri::async_runtime::spawn_blocking(move || {
-        let mut cmd = std::process::Command::new(&separator_path);
+        let mut cmd = std::process::Command::new(&separator_path).hide_window();
         
         // Add ffmpeg to PATH so audio-separator can find it
         let current_path = std::env::var("PATH").unwrap_or_default();
