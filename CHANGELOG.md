@@ -1,5 +1,17 @@
 # Changelog
 
+## 🚀 What's New in v0.4.2
+- **Bug Fixes:**
+  - Fixed a TypeScript compilation error that broke CI pipelines due to an unused `openPath` import in `library-dashboard.tsx`.
+
+## 🚀 What's New in v0.4.1
+- **BPM & Key Detection:** 
+  - Automatically analyzes imported and downloaded audio files using `librosa` (in an isolated Python environment).
+  - Calculates the track's tempo (BPM) and musical key (via Krumhansl-Schmuckler profiles) and appends this data to the filename seamlessly.
+- **App Sidebar Grouping:**
+  - Redesigned the navigation sidebar to group menus logically into **"Studio Tools"** and **"Library & Assets"** for better UX.
+- **Backend Architecture Refactor:**
+  - Split the monolithic `lib.rs` file into modular components (`models.rs`, `settings.rs`, `storage.rs`, `downloader.rs`, `extractor.rs`, `ai_models.rs`, and `analyzer.rs`), improving maintainability and development speed.
 ## 🚀 What's New in v0.4.0
 
 This release introduces the all-new **History & Library Dashboard** for centralized media management, automatic partitioned file storage, one-click stem group playback in the DAW STEM Mixer Studio, and seamless integration between YouTube downloads and AI stem extraction!
