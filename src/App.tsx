@@ -13,6 +13,7 @@ import { DependencyCheck } from "@/components/dependency-check"
 import { Help } from "@/components/help"
 import { StemExtractor } from "@/components/stem-extractor"
 import { ModelStore } from "@/components/model-store"
+import { LibraryDashboard } from "@/components/library-dashboard"
 import { StemMixerPage } from "@/components/stem-mixer-page"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
@@ -23,6 +24,7 @@ function AppContent() {
   const [isReady, setIsReady] = useState(false)
   const [isAppBusy, setIsAppBusy] = useState(false)
   const [selectedModel, setSelectedModel] = useState("htdemucs.yaml")
+  const [extractorInputFile, setExtractorInputFile] = useState("")
 
   const handleSelectPage = (page: string) => {
     if (isAppBusy) {
@@ -37,11 +39,17 @@ function AppContent() {
     setActivePage("stem-extractor");
   }
 
+  const handleSendToExtractor = (filePath: string) => {
+    setExtractorInputFile(filePath);
+    setActivePage("stem-extractor");
+  }
+
   const getPageTitle = () => {
     switch (activePage) {
       case "downloader": return "Downloader"
       case "stem-extractor": return "STEM Extractor"
       case "stem-mixer": return "STEM Mixer Studio"
+      case "library": return "History & Library"
       case "model-store": return "AI Model Store"
       case "settings": return "Settings"
       case "help": return "Help & Documentation"
@@ -77,12 +85,22 @@ function AppContent() {
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
                       onNavigateToModelStore={() => setActivePage("model-store")}
+                      initialInputFile={extractorInputFile}
                       onExtractionComplete={() => setActivePage("stem-mixer")}
                     />
                   </div>
                   <div className={activePage === "stem-mixer" ? "block" : "hidden"}>
                     <StemMixerPage
                       onNavigateToExtractor={() => setActivePage("stem-extractor")}
+                      onNavigateToLibrary={() => setActivePage("library")}
+                    />
+                  </div>
+                  <div className={activePage === "library" ? "block" : "hidden"}>
+                    <LibraryDashboard
+                      isActive={activePage === "library"}
+                      onSendToExtractor={handleSendToExtractor}
+                      onNavigateToDownloader={() => setActivePage("downloader")}
+                      onNavigateToMixer={() => setActivePage("stem-mixer")}
                     />
                   </div>
                   <div className={activePage === "model-store" ? "block" : "hidden"}>

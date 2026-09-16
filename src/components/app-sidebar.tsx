@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, Sliders } from "lucide-react"
+import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders } from "lucide-react"
 import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
@@ -39,6 +39,13 @@ const data = {
       id: "stem-mixer",
       icon: (
         <Sliders />
+      ),
+    },
+    {
+      title: "History & Library",
+      id: "library",
+      icon: (
+        <FolderArchiveIcon />
       ),
     },
     {

@@ -6,7 +6,7 @@ import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Help() {
-  const [version, setVersion] = useState("0.3.1");
+  const [version, setVersion] = useState("0.4.0");
 
   useEffect(() => {
     getVersion().then(setVersion).catch(() => {});

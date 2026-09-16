@@ -100,13 +100,13 @@ export function Settings() {
         <CardDescription>Configure global preferences for Remixer Tools.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="download-dir">Default Download Directory</Label>
+        <div className="space-y-3">
+          <Label htmlFor="download-dir">Remixer Tools Base Directory</Label>
           <div className="flex gap-2">
             <Input
               id="download-dir"
               readOnly
-              value={downloadDir || "Default (Downloads folder)"}
+              value={downloadDir || "Default (~/downloads/remixer-tools)"}
               className="font-mono text-sm text-muted-foreground"
             />
             <Button variant="outline" onClick={selectDirectory}>
@@ -115,8 +115,52 @@ export function Settings() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            All videos and audio files will be saved to this directory.
+            Root folder for all Remixer Tools media. Subdirectories are organized automatically.
           </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="min-w-0 pr-2">
+                <p className="text-xs font-semibold flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                  Downloader Library
+                </p>
+                <p className="text-[11px] font-mono text-muted-foreground truncate" title={`${downloadDir}/library`}>
+                  {downloadDir ? `${downloadDir}/library` : "~/downloads/remixer-tools/library"}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs shrink-0"
+                onClick={() => invoke("open_storage_folder", { folderType: "library" })}
+              >
+                <FolderOpenIcon className="h-3.5 w-3.5 mr-1" />
+                Open
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="min-w-0 pr-2">
+                <p className="text-xs font-semibold flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-purple-500 shrink-0" />
+                  STEM Extractor
+                </p>
+                <p className="text-[11px] font-mono text-muted-foreground truncate" title={`${downloadDir}/extractor`}>
+                  {downloadDir ? `${downloadDir}/extractor` : "~/downloads/remixer-tools/extractor"}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs shrink-0"
+                onClick={() => invoke("open_storage_folder", { folderType: "extractor" })}
+              >
+                <FolderOpenIcon className="h-3.5 w-3.5 mr-1" />
+                Open
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">

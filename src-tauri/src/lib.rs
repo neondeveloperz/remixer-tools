@@ -103,11 +103,56 @@ struct AppSettings {
     filename_template: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StorageDirs {
+    pub base_dir: String,
+    pub library_dir: String,
+    pub extractor_dir: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StorageFileItem {
+    pub name: String,
+    pub path: String,
+    pub size_bytes: u64,
+    pub modified_time: u64,
+    pub category: String, // "download" | "stem"
+    pub extension: String,
+    pub stem_type: Option<String>,
+    pub parent_group: Option<String>,
+}
+
 fn get_settings_path(app: &tauri::AppHandle) -> std::path::PathBuf {
     app.path()
         .app_local_data_dir()
         .unwrap()
         .join("settings.json")
+}
+
+pub fn get_storage_dirs_internal(app: &tauri::AppHandle) -> StorageDirs {
+    let settings = get_settings(app.clone()).unwrap_or_default();
+    let base = if settings.download_dir.is_empty() {
+        if let Ok(p) = app.path().download_dir() {
+            p.join("remixer-tools")
+        } else {
+            std::env::current_dir().unwrap_or_default().join("remixer-tools")
+        }
+    } else {
+        std::path::PathBuf::from(&settings.download_dir)
+    };
+
+    let library = base.join("library");
+    let extractor = base.join("extractor");
+
+    let _ = std::fs::create_dir_all(&base);
+    let _ = std::fs::create_dir_all(&library);
+    let _ = std::fs::create_dir_all(&extractor);
+
+    StorageDirs {
+        base_dir: base.to_string_lossy().to_string(),
+        library_dir: library.to_string_lossy().to_string(),
+        extractor_dir: extractor.to_string_lossy().to_string(),
+    }
 }
 
 #[tauri::command]
@@ -124,7 +169,23 @@ fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
 
     let settings_path = get_settings_path(&app);
     if let Ok(content) = std::fs::read_to_string(&settings_path) {
-        if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
+        if let Ok(mut settings) = serde_json::from_str::<AppSettings>(&content) {
+            // Auto-migrate if download_dir was empty or raw downloads folder
+            let should_migrate = if settings.download_dir.is_empty() {
+                true
+            } else if let Ok(dl_path) = app.path().download_dir() {
+                let dl_str = dl_path.to_string_lossy().to_string();
+                settings.download_dir == dl_str
+            } else {
+                false
+            };
+
+            if should_migrate {
+                settings.download_dir = default_base_dir.clone();
+                let _ = serde_json::to_string(&settings)
+                    .map(|json| std::fs::write(&settings_path, json));
+            }
+
             return Ok(settings);
         }
     }
@@ -176,33 +237,192 @@ async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String, St
 
 #[tauri::command]
 fn get_download_dir(app: tauri::AppHandle) -> Result<String, String> {
-    Ok(get_settings(app)?.download_dir)
+    Ok(get_storage_dirs_internal(&app).library_dir)
 }
 
 #[tauri::command]
-fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
-    let dir = get_download_dir(app)?;
-    if !dir.is_empty() {
+fn get_storage_dirs(app: tauri::AppHandle) -> Result<StorageDirs, String> {
+    Ok(get_storage_dirs_internal(&app))
+}
+
+#[tauri::command]
+fn open_storage_folder(app: tauri::AppHandle, folder_type: String) -> Result<(), String> {
+    let dirs = get_storage_dirs_internal(&app);
+    let target = match folder_type.as_str() {
+        "library" => dirs.library_dir,
+        "extractor" => dirs.extractor_dir,
+        _ => dirs.base_dir,
+    };
+
+    if !target.is_empty() {
+        let _ = std::fs::create_dir_all(&target);
         #[cfg(target_os = "windows")]
         std::process::Command::new("explorer")
-            .hide_window()
-            .arg(&dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "macos")]
         std::process::Command::new("open")
-            .hide_window()
-            .arg(&dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "linux")]
         std::process::Command::new("xdg-open")
-            .hide_window()
-            .arg(&dir)
+            .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_download_folder(app: tauri::AppHandle) -> Result<(), String> {
+    open_storage_folder(app, "library".to_string())
+}
+
+fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: usize, items: &mut Vec<StorageFileItem>) {
+    if depth > 3 {
+        return;
+    }
+    if let Ok(entries) = std::fs::read_dir(dir_path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+                if !dir_name.starts_with('.') && dir_name != "library" && dir_name != "extractor" {
+                    scan_folder_recursive(&path, category, depth + 1, items);
+                }
+            } else if path.is_file() {
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+                if name.starts_with('.') {
+                    continue;
+                }
+                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov") {
+                    let (size_bytes, modified_time) = if let Ok(meta) = path.metadata() {
+                        let size = meta.len();
+                        let mod_time = meta.modified().ok()
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        (size, mod_time)
+                    } else {
+                        (0, 0)
+                    };
+
+                    let stem_type = if category == "stem" {
+                        name.rfind("_(").and_then(|start| {
+                            let after = &name[start + 2..];
+                            after.find(')').map(|end| after[..end].to_string())
+                        })
+                    } else {
+                        None
+                    };
+
+                    let parent_group = if category == "stem" {
+                        let group = if let Some(idx) = name.rfind("_(") {
+                            name[..idx].to_string()
+                        } else {
+                            name.clone()
+                        };
+                        Some(group)
+                    } else {
+                        None
+                    };
+
+                    let full_path_str = path.to_string_lossy().to_string();
+                    if !items.iter().any(|existing| existing.path == full_path_str) {
+                        items.push(StorageFileItem {
+                            name,
+                            path: full_path_str,
+                            size_bytes,
+                            modified_time,
+                            category: category.to_string(),
+                            extension: ext,
+                            stem_type,
+                            parent_group,
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[tauri::command]
+fn list_storage_files(app: tauri::AppHandle) -> Result<Vec<StorageFileItem>, String> {
+    let dirs = get_storage_dirs_internal(&app);
+    let mut items = Vec::new();
+
+    let library_path = std::path::PathBuf::from(&dirs.library_dir);
+    let extractor_path = std::path::PathBuf::from(&dirs.extractor_dir);
+    let base_path = std::path::PathBuf::from(&dirs.base_dir);
+
+    scan_folder_recursive(&library_path, "download", 0, &mut items);
+    scan_folder_recursive(&extractor_path, "stem", 0, &mut items);
+
+    // Also scan any root files directly in base_dir
+    if let Ok(entries) = std::fs::read_dir(&base_path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                let name = p.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+                if !name.starts_with('.') {
+                    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+                    if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov") {
+                        let size_bytes = p.metadata().map(|m| m.len()).unwrap_or(0);
+                        let modified_time = p.metadata().ok()
+                            .and_then(|m| m.modified().ok())
+                            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        let full_path_str = p.to_string_lossy().to_string();
+                        if !items.iter().any(|existing| existing.path == full_path_str) {
+                            let is_stem = name.contains("_(") && name.contains(")_");
+                            let (category, stem_type, parent_group) = if is_stem {
+                                let st = name.rfind("_(").and_then(|start| {
+                                    let after = &name[start + 2..];
+                                    after.find(')').map(|end| after[..end].to_string())
+                                });
+                                let pg = if let Some(idx) = name.rfind("_(") {
+                                    Some(name[..idx].to_string())
+                                } else {
+                                    Some(name.clone())
+                                };
+                                ("stem".to_string(), st, pg)
+                            } else {
+                                ("download".to_string(), None, None)
+                            };
+
+                            items.push(StorageFileItem {
+                                name,
+                                path: full_path_str,
+                                size_bytes,
+                                modified_time,
+                                category,
+                                extension: ext,
+                                stem_type,
+                                parent_group,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    items.sort_by(|a, b| b.modified_time.cmp(&a.modified_time));
+
+    Ok(items)
+}
+
+#[tauri::command]
+fn delete_storage_file(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if p.exists() && p.is_file() {
+        std::fs::remove_file(p).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -213,6 +433,8 @@ fn set_download_dir(app: tauri::AppHandle, dir: String) -> Result<(), String> {
     settings.download_dir = dir;
     let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
     std::fs::write(get_settings_path(&app), json).map_err(|e| e.to_string())?;
+    // Pre-create library and extractor in new base dir
+    let _ = get_storage_dirs_internal(&app);
     Ok(())
 }
 
@@ -417,9 +639,10 @@ async fn run_ytdlp(
     tauri::async_runtime::spawn_blocking(move || {
         let mut cmd = std::process::Command::new(&ytdlp_path).hide_window();
 
-        // Change working directory to target_dir so files are saved there
+        // Change working directory and pass -P to target_dir so files are saved there
         if !target_dir_clone.is_empty() {
             cmd.current_dir(&target_dir_clone);
+            cmd.arg("-P").arg(&target_dir_clone);
         }
 
         // Use JSON progress template for easier frontend parsing
@@ -478,7 +701,7 @@ async fn run_ytdlp(
 
         let app_stdout = app_clone.clone();
         let id_stdout = id_clone.clone();
-        std::thread::spawn(move || {
+        let h_out = std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
@@ -547,7 +770,7 @@ async fn run_ytdlp(
         });
 
         let app_stderr = app_clone.clone();
-        std::thread::spawn(move || {
+        let h_err = std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
@@ -556,9 +779,10 @@ async fn run_ytdlp(
             }
         });
 
-        if let Ok(_status) = child.wait() {
-            let _ = app_clone.emit("ytdlp-done", id_clone);
-        }
+        let _ = child.wait();
+        let _ = h_out.join();
+        let _ = h_err.join();
+        let _ = app_clone.emit("ytdlp-done", id_clone);
     });
 
     Ok(())
@@ -867,7 +1091,7 @@ async fn run_stem_extractor(
 
     ensure_separator_dml_patch(&python_path);
 
-    let target_dir = get_settings(app.clone()).unwrap_or_default().download_dir;
+    let target_dir = get_storage_dirs_internal(&app).extractor_dir;
     let models_dir = get_models_dir(&app);
 
     app.emit(
@@ -1513,6 +1737,10 @@ pub fn run() {
             set_download_dir,
             set_filename_template,
             get_settings,
+            get_storage_dirs,
+            open_storage_folder,
+            list_storage_files,
+            delete_storage_file,
             setup_dependencies,
             get_video_info,
             setup_stem_extractor,

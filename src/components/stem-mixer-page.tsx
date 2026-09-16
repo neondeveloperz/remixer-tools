@@ -2,15 +2,16 @@ import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { DawTrackMixer } from "@/components/daw-track-mixer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sliders, Music, Sparkles, Plus } from "lucide-react";
+import { Sliders, Music, Sparkles, FolderArchive, Plus } from "lucide-react";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { extractStemName } from "@/lib/utils";
 
 interface StemMixerPageProps {
   onNavigateToExtractor?: () => void;
+  onNavigateToLibrary?: () => void;
 }
 
-export function StemMixerPage({ onNavigateToExtractor }: StemMixerPageProps) {
+export function StemMixerPage({ onNavigateToExtractor, onNavigateToLibrary }: StemMixerPageProps) {
   const player = usePlayer();
 
   const handleImportStems = async () => {
@@ -76,6 +77,16 @@ export function StemMixerPage({ onNavigateToExtractor }: StemMixerPageProps) {
               <Sparkles className="h-3.5 w-3.5 text-primary" /> STEM Extractor
             </Button>
           )}
+          {onNavigateToLibrary && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNavigateToLibrary}
+              className="gap-1.5 text-xs border-border/80 hover:bg-muted"
+            >
+              <FolderArchive className="h-3.5 w-3.5" /> Library
+            </Button>
+          )}
         </div>
       </div>
 
@@ -112,6 +123,11 @@ export function StemMixerPage({ onNavigateToExtractor }: StemMixerPageProps) {
               <Button variant="outline" onClick={handleImportStems} className="gap-2">
                 <Music className="h-4 w-4" /> Import Stems from Files
               </Button>
+              {onNavigateToLibrary && (
+                <Button variant="ghost" onClick={onNavigateToLibrary} className="gap-2 text-muted-foreground">
+                  <FolderArchive className="h-4 w-4" /> Browse Library
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
