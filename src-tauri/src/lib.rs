@@ -258,21 +258,18 @@ fn open_storage_folder(app: tauri::AppHandle, folder_type: String) -> Result<(),
         let _ = std::fs::create_dir_all(&target);
         #[cfg(target_os = "windows")]
         std::process::Command::new("explorer")
-            .hide_window()
             .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "macos")]
         std::process::Command::new("open")
-            .hide_window()
             .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;
 
         #[cfg(target_os = "linux")]
         std::process::Command::new("xdg-open")
-            .hide_window()
             .arg(&target)
             .spawn()
             .map_err(|e| e.to_string())?;

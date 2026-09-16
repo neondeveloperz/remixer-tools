@@ -17,6 +17,7 @@ import {
   Search,
   FolderOpen,
   Play,
+  Pause,
   Trash2,
   Music,
   Video,
@@ -207,13 +208,16 @@ export function LibraryDashboard({
     });
   };
 
-  // Handle Delete
+  // Handle Delete Single File
   const handleDelete = async (filePath: string) => {
     if (!confirm("Are you sure you want to delete this file? This cannot be undone.")) return;
     setDeletingPath(filePath);
     try {
       await invoke("delete_storage_file", { path: filePath });
       setFiles((prev) => prev.filter((f) => f.path !== filePath));
+      if (player.tracks.some((t) => t.path === filePath)) {
+        player.clearTracks();
+      }
     } catch (e) {
       console.error("Failed to delete file:", e);
       alert(`Could not delete file: ${e}`);
@@ -222,19 +226,48 @@ export function LibraryDashboard({
     }
   };
 
+  // Handle Delete Entire Stem Group
+  const handleDeleteGroup = async (groupTitle: string, stemFiles: StorageFileItem[]) => {
+    if (!confirm(`Are you sure you want to delete all ${stemFiles.length} stems for "${groupTitle}"? This cannot be undone.`)) return;
+    try {
+      await Promise.all(stemFiles.map((sf) => invoke("delete_storage_file", { path: sf.path })));
+      const pathsToDelete = new Set(stemFiles.map((sf) => sf.path));
+      setFiles((prev) => prev.filter((f) => !pathsToDelete.has(f.path)));
+      if (player.tracks.some((t) => pathsToDelete.has(t.path))) {
+        player.clearTracks();
+      }
+    } catch (e) {
+      console.error("Failed to delete stem group:", e);
+      alert(`Could not delete stem group: ${e}`);
+    }
+  };
+
   // Handle Play Single
   const handlePlaySingle = (file: StorageFileItem) => {
+    const isCurrent = player.tracks.length === 1 && player.tracks[0]?.path === file.path;
+    if (isCurrent) {
+      player.togglePlayPause();
+      return;
+    }
     const trackName = file.stem_type || extractStemName(file.name);
     player.loadTracks([{ name: trackName, path: file.path }]);
   };
 
   // Handle Play Stem Group
   const handlePlayStemGroup = (_groupName: string, stemFiles: StorageFileItem[]) => {
+    const isCurrentGroup =
+      player.tracks.length === stemFiles.length &&
+      stemFiles.every((sf) => player.tracks.some((t) => t.path === sf.path));
+    if (isCurrentGroup) {
+      navigateToMixer?.();
+      return;
+    }
     const tracks: TrackInfo[] = stemFiles.map((sf) => ({
       name: sf.stem_type || extractStemName(sf.name),
       path: sf.path,
     }));
     player.loadTracks(tracks);
+    navigateToMixer?.();
   };
 
   // Filter and sort items
@@ -513,8 +546,19 @@ export function LibraryDashboard({
             const totalGroupSize = stemItems.reduce((acc, f) => acc + f.size_bytes, 0);
             const latestMod = Math.max(...stemItems.map((f) => f.modified_time));
 
+            const isCurrentGroup =
+              player.tracks.length === stemItems.length &&
+              stemItems.every((si) => player.tracks.some((t) => t.path === si.path));
+
             return (
-              <Card key={groupTitle} className="overflow-hidden border-border/80 bg-card hover:border-border transition-colors">
+              <Card
+                key={groupTitle}
+                className={`overflow-hidden border transition-all ${
+                  isCurrentGroup
+                    ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
+                    : "border-border/80 bg-card hover:border-border"
+                }`}
+              >
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 border-b border-border/50">
                   <div className="flex items-center gap-3.5 min-w-0">
                     <div className="h-11 w-11 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 border border-purple-500/20">
@@ -526,6 +570,11 @@ export function LibraryDashboard({
                         <Badge variant="secondary" className="text-[11px] font-semibold">
                           {stemItems.length} Stems
                         </Badge>
+                        {isCurrentGroup && (
+                          <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] font-bold">
+                            {player.isPlaying ? "Playing in DAW" : "Loaded in DAW"}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span>{formatBytes(totalGroupSize)}</span>
@@ -541,13 +590,11 @@ export function LibraryDashboard({
                   <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                     <Button
                       size="sm"
-                      onClick={() => {
-                        handlePlayStemGroup(groupTitle, stemItems);
-                        navigateToMixer?.();
-                      }}
+                      onClick={() => handlePlayStemGroup(groupTitle, stemItems)}
                       className="gap-1.5 font-semibold"
                     >
-                      <Play className="h-3.5 w-3.5 fill-current" /> Play in DAW Mixer
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      {isCurrentGroup ? "Open in DAW Mixer" : "Play in DAW Mixer"}
                     </Button>
                     <Button
                       variant="outline"
@@ -559,6 +606,15 @@ export function LibraryDashboard({
                       className="gap-1.5"
                     >
                       <FolderOpen className="h-3.5 w-3.5" /> Open Folder
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteGroup(groupTitle, stemItems)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Delete all stems in this group"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -596,7 +652,13 @@ export function LibraryDashboard({
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             title="Play track solo"
                           >
-                            <Play className="h-3.5 w-3.5" />
+                            {player.tracks.length === 1 &&
+                            player.tracks[0]?.path === stem.path &&
+                            player.isPlaying ? (
+                              <Pause className="h-3.5 w-3.5 fill-current text-primary" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
@@ -636,10 +698,16 @@ export function LibraryDashboard({
               );
             const badgeStyle = isStem ? getStemBadgeStyle(file.stem_type) : "";
 
+            const isCurrent = player.tracks.length === 1 && player.tracks[0]?.path === file.path;
+
             return (
               <div
                 key={file.path}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/80 bg-card hover:border-border hover:shadow-xs transition-all"
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${
+                  isCurrent
+                    ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
+                    : "border-border/80 bg-card hover:border-border hover:shadow-xs"
+                }`}
               >
                 {/* Left: Icon / Thumbnail & Details */}
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -695,12 +763,24 @@ export function LibraryDashboard({
                 <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                   {/* Play Button */}
                   <Button
-                    variant="default"
+                    variant={isCurrent ? "secondary" : "default"}
                     size="sm"
                     onClick={() => handlePlaySingle(file)}
                     className="h-8 gap-1.5 font-semibold"
                   >
-                    <Play className="h-3.5 w-3.5 fill-current" /> Play
+                    {isCurrent && player.isPlaying ? (
+                      <>
+                        <Pause className="h-3.5 w-3.5 fill-current text-primary" /> Pause
+                      </>
+                    ) : isCurrent ? (
+                      <>
+                        <Play className="h-3.5 w-3.5 fill-current text-primary" /> Resume
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-3.5 w-3.5 fill-current" /> Play
+                      </>
+                    )}
                   </Button>
 
                   {/* Send to STEM Extractor (for audio files) */}
