@@ -1158,13 +1158,6 @@ async fn run_stem_extractor(
         cmd.arg("--mdx_batch_size").arg("1");
         cmd.arg("--vr_batch_size").arg("1");
 
-        // Chunk long audio files into smaller durations to keep memory flat regardless of song length
-        if is_low_mem {
-            cmd.arg("--chunk_duration").arg("300"); // 5-minute chunks
-        } else {
-            cmd.arg("--chunk_duration").arg("600"); // 10-minute chunks
-        }
-
         let model_lower = model.to_lowercase();
         let is_demucs = model_lower.contains("demucs") || (model_lower.ends_with(".yaml") && !model_lower.contains("roformer") && !model_lower.contains("bs_") && !model_lower.contains("mel_band"));
 
