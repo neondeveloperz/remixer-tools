@@ -1,6 +1,7 @@
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -10,6 +11,7 @@ export function NavMain({
   items,
   activeItem,
   onSelectItem,
+  label,
 }: {
   items: {
     title: string
@@ -18,9 +20,11 @@ export function NavMain({
   }[]
   activeItem?: string
   onSelectItem?: (id: string) => void
+  label?: string
 }) {
   return (
     <SidebarGroup>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => (

@@ -19,7 +19,7 @@ const data = {
     email: "m@example.com",
     avatar: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='24' fill='%23181f2a'/%3E%3Ccircle cx='48' cy='34' r='18' fill='%23f8fafc'/%3E%3Cpath d='M18 82c6-14 18-22 30-22s24 8 30 22' fill='%23f8fafc'/%3E%3C/svg%3E",
   },
-  navMain: [
+  navTools: [
     {
       title: "Downloader",
       id: "downloader",
@@ -41,6 +41,8 @@ const data = {
         <Sliders />
       ),
     },
+  ],
+  navLibrary: [
     {
       title: "History & Library",
       id: "library",
@@ -100,7 +102,8 @@ export function AppSidebar({ activePage, onSelectPage, isBusy, ...props }: AppSi
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className={isBusy ? "opacity-50 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}>
-        <NavMain items={data.navMain} activeItem={activePage} onSelectItem={onSelectPage} />
+        <NavMain items={data.navTools} activeItem={activePage} onSelectItem={onSelectPage} label="Studio Tools" />
+        <NavMain items={data.navLibrary} activeItem={activePage} onSelectItem={onSelectPage} label="Library & Assets" />
         <NavSecondary items={data.navSecondary} activeItem={activePage} onSelectItem={onSelectPage} className="mt-auto" />
       </SidebarContent>
       {isVisible && <div className="h-24 shrink-0 bg-transparent" />}

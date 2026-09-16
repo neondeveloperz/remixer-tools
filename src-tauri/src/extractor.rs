@@ -177,22 +177,26 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         if cfg!(target_os = "windows") {
             app.emit(
                 "stem-log",
-                "Installing audio-separator and ONNX Runtime DirectML...",
+                "Installing audio-separator, librosa, and ONNX Runtime DirectML...",
             )
             .unwrap();
             cmd.arg("install")
                 .arg("audio-separator")
                 .arg("audioread")
+                .arg("librosa")
+                .arg("soundfile")
                 .arg("onnxruntime-directml")
                 .arg("--prefer-binary")
                 .arg("--upgrade")
                 .arg("--no-warn-script-location");
         } else {
-            app.emit("stem-log", "Installing audio-separator and ONNX Runtime...")
+            app.emit("stem-log", "Installing audio-separator, librosa, and ONNX Runtime...")
                 .unwrap();
             cmd.arg("install")
                 .arg("audio-separator")
                 .arg("audioread")
+                .arg("librosa")
+                .arg("soundfile")
                 .arg("onnxruntime")
                 .arg("--prefer-binary")
                 .arg("--upgrade")
