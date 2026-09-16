@@ -345,10 +345,17 @@ pub async fn run_ytdlp(
             }
         }
 
-        if format_clone == "mp3" {
+        if format_clone == "mp3" || format_clone == "mp3_meta" {
+            let audio_q = if quality_clone == "best" { "320K" } else { quality_clone.as_str() };
+            cmd.arg("-f").arg("bestaudio/best");
             cmd.arg("-x").arg("--audio-format").arg("mp3");
-            if quality_clone != "best" {
-                cmd.arg("--audio-quality").arg(&quality_clone);
+            cmd.arg("--audio-quality").arg(audio_q);
+
+            if format_clone == "mp3_meta" {
+                cmd.arg("--embed-metadata");
+                cmd.arg("--embed-thumbnail");
+                cmd.arg("--convert-thumbnails").arg("jpg");
+                cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
             }
         } else {
             // Video format
@@ -401,15 +408,18 @@ pub async fn run_ytdlp(
                             if let Some(path_str) = line.split("Destination: ").last() {
                                 let path = path_str.trim().trim_matches('"');
                                 let full_path = std::path::Path::new(&target_dir_clone).join(path);
-                                #[derive(Serialize, Clone)]
-                                struct PathPayload<'a> {
-                                    id: &'a str,
-                                    path: String,
+                                let ext = full_path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                                if !["webp", "jpg", "jpeg", "png", "part", "ytdl"].contains(&ext.as_str()) {
+                                    #[derive(Serialize, Clone)]
+                                    struct PathPayload<'a> {
+                                        id: &'a str,
+                                        path: String,
+                                    }
+                                    let _ = app_stdout.emit(
+                                        "ytdlp-filepath",
+                                        PathPayload { id: &id_stdout, path: full_path.to_string_lossy().to_string() },
+                                    );
                                 }
-                                let _ = app_stdout.emit(
-                                    "ytdlp-filepath",
-                                    PathPayload { id: &id_stdout, path: full_path.to_string_lossy().to_string() },
-                                );
                             }
                         } else if line.contains("Merging formats into ") {
                             if let Some(path_str) = line.split("Merging formats into ").last() {

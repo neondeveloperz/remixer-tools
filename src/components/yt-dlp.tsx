@@ -246,6 +246,7 @@ export function YtDlp() {
                   <SelectContent>
                     <SelectItem value="video">Video (MP4)</SelectItem>
                     <SelectItem value="mp3">Audio (MP3)</SelectItem>
+                    <SelectItem value="mp3_meta">Audio (MP3 with Meta)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -333,7 +334,7 @@ export function YtDlp() {
                   <div className="flex justify-between items-start">
                     <div className="truncate pr-4">
                       <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
-                        {item.quality === 'best' ? 'Best' : item.quality} {item.format.toUpperCase()}
+                        {item.quality === 'best' ? 'Best' : item.quality} {item.format === 'mp3_meta' ? 'MP3 + Meta' : item.format.toUpperCase()}
                       </span>
                       <span className="font-medium text-sm truncate">{item.title}</span>
                     </div>
