@@ -15,16 +15,45 @@ pub fn get_storage_dirs_internal(app: &tauri::AppHandle) -> StorageDirs {
     };
 
     let library = base.join("library");
-    let extractor = base.join("extractor");
+    let stems = base.join("stems");
+    let old_extractor = base.join("extractor");
 
     let _ = std::fs::create_dir_all(&base);
     let _ = std::fs::create_dir_all(&library);
-    let _ = std::fs::create_dir_all(&extractor);
+    let _ = std::fs::create_dir_all(&stems);
+
+    // Auto-migrate any existing stems from extractor/ into stems/<title>/
+    if old_extractor.exists() && old_extractor.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&old_extractor) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_file() {
+                    let name = p.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_string();
+                    let group = if let Some(idx) = name.rfind("_(") {
+                        &name[..idx]
+                    } else {
+                        "General"
+                    };
+                    let song_dir = stems.join(group);
+                    let _ = std::fs::create_dir_all(&song_dir);
+                    let dest = song_dir.join(&name);
+                    let _ = std::fs::rename(&p, &dest);
+                }
+            }
+        }
+        // If old extractor is now empty, remove it
+        if let Ok(mut entries) = std::fs::read_dir(&old_extractor) {
+            if entries.next().is_none() {
+                let _ = std::fs::remove_dir(&old_extractor);
+            }
+        }
+    }
 
     StorageDirs {
         base_dir: base.to_string_lossy().to_string(),
         library_dir: library.to_string_lossy().to_string(),
-        extractor_dir: extractor.to_string_lossy().to_string(),
+        extractor_dir: stems.to_string_lossy().to_string(),
+        stems_dir: stems.to_string_lossy().to_string(),
     }
 }
 
@@ -43,7 +72,7 @@ pub fn open_storage_folder(app: tauri::AppHandle, folder_type: String) -> Result
     let dirs = get_storage_dirs_internal(&app);
     let path = match folder_type.as_str() {
         "library" => dirs.library_dir,
-        "extractor" => dirs.extractor_dir,
+        "extractor" | "stems" => dirs.stems_dir,
         _ => dirs.base_dir,
     };
     
@@ -56,10 +85,18 @@ pub fn open_path(path: String) -> Result<(), String> {
 }
 
 pub fn open_directory(path: &str) -> Result<(), String> {
+    let p = std::path::Path::new(path);
+    let target_dir = if p.is_file() {
+        p.parent().unwrap_or(p)
+    } else {
+        p
+    };
+
     #[cfg(target_os = "windows")]
     {
+        let win_path = target_dir.to_string_lossy().replace('/', "\\");
         std::process::Command::new("explorer")
-            .arg(path)
+            .arg(&win_path)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -67,7 +104,7 @@ pub fn open_directory(path: &str) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
-            .arg(path)
+            .arg(target_dir)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -75,7 +112,7 @@ pub fn open_directory(path: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         std::process::Command::new("xdg-open")
-            .arg(path)
+            .arg(target_dir)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -97,7 +134,7 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
             let path = entry.path();
             if path.is_dir() {
                 let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default();
-                if !dir_name.starts_with('.') && dir_name != "library" && dir_name != "extractor" {
+                if !dir_name.starts_with('.') && dir_name != "library" && dir_name != "extractor" && dir_name != "stems" {
                     scan_folder_recursive(&path, category, depth + 1, items);
                 }
             } else if path.is_file() {
@@ -128,7 +165,16 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
                     };
 
                     let parent_group = if category == "stem" {
-                        let group = if let Some(idx) = name.rfind("_(") {
+                        let parent_dir_name = path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str());
+                        let group = if let Some(dir) = parent_dir_name {
+                            if dir != "stems" && dir != "extractor" {
+                                dir.to_string()
+                            } else if let Some(idx) = name.rfind("_(") {
+                                name[..idx].to_string()
+                            } else {
+                                name.clone()
+                            }
+                        } else if let Some(idx) = name.rfind("_(") {
                             name[..idx].to_string()
                         } else {
                             name.clone()
@@ -163,11 +209,15 @@ pub fn list_storage_files(app: tauri::AppHandle) -> Result<Vec<StorageFileItem>,
     let mut items = Vec::new();
 
     let library_path = std::path::PathBuf::from(&dirs.library_dir);
-    let extractor_path = std::path::PathBuf::from(&dirs.extractor_dir);
+    let stems_path = std::path::PathBuf::from(&dirs.stems_dir);
     let base_path = std::path::PathBuf::from(&dirs.base_dir);
+    let old_extractor_path = base_path.join("extractor");
 
     scan_folder_recursive(&library_path, "download", 0, &mut items);
-    scan_folder_recursive(&extractor_path, "stem", 0, &mut items);
+    scan_folder_recursive(&stems_path, "stem", 0, &mut items);
+    if old_extractor_path.exists() {
+        scan_folder_recursive(&old_extractor_path, "stem", 0, &mut items);
+    }
 
     // Also scan any root files directly in base_dir
     if let Ok(entries) = std::fs::read_dir(&base_path) {
@@ -229,6 +279,91 @@ pub fn delete_storage_file(path: String) -> Result<(), String> {
     let p = std::path::Path::new(&path);
     if p.exists() && p.is_file() {
         std::fs::remove_file(p).map_err(|e| e.to_string())?;
+        // If parent song folder is now empty and not a root directory, remove it
+        if let Some(parent) = p.parent() {
+            if let Some(dir_name) = parent.file_name().and_then(|n| n.to_str()) {
+                if dir_name != "stems" && dir_name != "library" && dir_name != "extractor" {
+                    if let Ok(mut entries) = std::fs::read_dir(parent) {
+                        if entries.next().is_none() {
+                            let _ = std::fs::remove_dir(parent);
+                        }
+                    }
+                }
+            }
+        }
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_audio_cover(
+    app: tauri::AppHandle,
+    file_path: String,
+) -> Result<Option<String>, String> {
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() || !path.is_file() {
+        return Ok(None);
+    }
+
+    let app_dir = app.path().app_local_data_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let ffmpeg_binary = if cfg!(target_os = "windows") {
+        app_dir.join("ffmpeg.exe")
+    } else {
+        app_dir.join("ffmpeg")
+    };
+
+    let ffmpeg_path = if ffmpeg_binary.exists() {
+        ffmpeg_binary
+    } else {
+        std::path::PathBuf::from("ffmpeg")
+    };
+
+    let output = tauri::async_runtime::spawn_blocking(move || {
+        let mut cmd = std::process::Command::new(&ffmpeg_path);
+
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        cmd.arg("-v")
+            .arg("error")
+            .arg("-y")
+            .arg("-i")
+            .arg(&file_path)
+            .arg("-an")
+            .arg("-vcodec")
+            .arg("copy")
+            .arg("-f")
+            .arg("image2")
+            .arg("-update")
+            .arg("1")
+            .arg("pipe:1")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .output()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
+
+    if output.status.success() && !output.stdout.is_empty() {
+        let bytes = output.stdout;
+        use base64::prelude::*;
+        let mime = if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+            "image/jpeg"
+        } else if bytes.starts_with(&[0x89, b'P', b'N', b'G']) {
+            "image/png"
+        } else if bytes.starts_with(b"RIFF") && bytes.len() > 12 && &bytes[8..12] == b"WEBP" {
+            "image/webp"
+        } else {
+            "image/jpeg"
+        };
+        let b64 = BASE64_STANDARD.encode(&bytes);
+        Ok(Some(format!("data:{};base64,{}", mime, b64)))
+    } else {
+        Ok(None)
+    }
 }

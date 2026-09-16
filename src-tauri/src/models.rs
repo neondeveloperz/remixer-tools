@@ -17,6 +17,7 @@ pub struct StorageDirs {
     pub base_dir: String,
     pub library_dir: String,
     pub extractor_dir: String,
+    pub stems_dir: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

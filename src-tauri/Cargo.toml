@@ -30,6 +30,7 @@ zip = "8.6.0"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 futures-util = "0.3.34"
+base64 = "0.22"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

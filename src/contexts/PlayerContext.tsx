@@ -11,6 +11,7 @@ export interface TrackInfo {
   name: string; // e.g., "Vocals", "Drums", or filename
   path: string; // Absolute path to the local audio file
   isUrl?: boolean; // True if it's a direct URL
+  coverUrl?: string; // URL, data URL, or image path for track thumbnail/album art
 }
 
 export const getTrackKey = (track: TrackInfo, index?: number): string => {

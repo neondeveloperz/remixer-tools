@@ -375,7 +375,7 @@ export function YtDlp() {
                     <>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={async () => {
                         if (item.filepath) {
-                          player.loadTracks([{ name: item.title, path: item.filepath }]);
+                          player.loadTracks([{ name: item.title, path: item.filepath, coverUrl: item.thumbnail }]);
                         } else {
                           // Fallback to file picker if filepath wasn't captured
                           try {

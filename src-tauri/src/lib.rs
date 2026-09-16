@@ -79,6 +79,7 @@ pub fn run() {
             open_path,
             list_storage_files,
             delete_storage_file,
+            get_audio_cover,
             setup_dependencies,
             get_video_info,
             setup_stem_extractor,
