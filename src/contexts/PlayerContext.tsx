@@ -185,6 +185,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setDuration,
         trackStates,
         updateTrackState,
+        seekTarget,
         seek,
         peaks,
         isLoadingBuffers,

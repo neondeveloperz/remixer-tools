@@ -58,7 +58,7 @@ export function StemPlayer() {
           max={duration || 100}
           step={0.1}
           onValueChange={handleSeekDrag}
-          onValueCommit={handleSeekCommit}
+          onValueCommitted={handleSeekCommit}
           className="w-full cursor-pointer opacity-90 group-hover:opacity-100 transition-opacity [&_[data-slot=slider-track]]:rounded-none [&_[data-slot=slider-track]]:h-1 group-hover:[&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-thumb]]:size-3 [&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:border-0 [&_[data-slot=slider-thumb]]:shadow-md [&_[data-slot=slider-thumb]]:opacity-0 group-hover:[&_[data-slot=slider-thumb]]:opacity-100 transition-all"
         />
       </div>
