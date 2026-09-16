@@ -1,11 +1,32 @@
 # Changelog
 
-## 🚀 What's New in v0.3.1
+## 🚀 What's New in v0.4.0
 
-This update introduces the **DAW Multi-Track Studio & STEM Mixer**, a dedicated **History & Library Dashboard**, sample-accurate **Web Audio Multi-Track Synchronization**, and comprehensive **RAM & Memory Optimizations** for AI stem separation.
+This release introduces the all-new **History & Library Dashboard** for centralized media management, automatic partitioned file storage, one-click stem group playback in the DAW STEM Mixer Studio, and seamless integration between YouTube downloads and AI stem extraction!
 
 ### ✨ Features & Enhancements
-- **History & Library Dashboard:** Centralized management for all downloads and separated stems with automatic partitioned storage (`~/downloads/remixer-tools/library` and `extractor/`), storage usage metrics, real-time search, filters, and 1-click "Play in DAW Mixer".
+- **History & Library Dashboard:**
+  - **Partitioned Storage Architecture:** All media files are cleanly segregated into dedicated subdirectories (`~/downloads/remixer-tools/library` for downloaded videos/audio and `~/downloads/remixer-tools/extractor` for separated stems), while retaining the ability to customize the base directory in Settings.
+  - **Song-Grouped Stem Collections:** Automatically organizes separated stems (Vocals, Drums, Bass, Other, etc.) by parent song title with full storage size metrics and modification timestamps.
+  - **1-Click "Play in DAW Mixer":** Load all stems of any separated song directly into the STEM Mixer Studio in sample-accurate Web Audio synchronization with a single click.
+  - **Real-Time Interactive Playback Controls:** Individual songs and stems feature live Play / Pause / Resume toggles that reflect player status without reloading audio buffers from scratch.
+  - **Batch & Stem Operations:** Delete individual stem files or delete entire stem groups at once with confirmation prompts, and open directory locations directly in File Explorer.
+  - **Multi-Key YouTube Metadata Indexing:** Matches local media against downloaded history to display video titles and YouTube thumbnails reliably across files.
+  - **Real-Time Event Refresh & Smart Polling:** Automatically refreshes the library view when downloads or extractions complete in the background.
+  - **Global Media Filters & Search:** Instant search by song title, artist, or stem type, plus filtering by Media Type (Audio / Video) and sorting by Date, Name, and File Size.
+  - **Direct "Separate STEMs" Pipeline:** Send any downloaded song directly to the STEM Extractor with the input path pre-filled.
+
+---
+See the assets below to download this version.
+The Windows portable executable requires the Microsoft Edge WebView2 Runtime.
+
+**Full Changelog**: https://github.com/neondeveloperz/remixer-tools/compare/v0.3.1...v0.4.0
+
+## 🚀 What's New in v0.3.1
+
+This update brings **massive RAM & memory optimizations** to the STEM Extractor engine, introduces the dedicated **STEM Mixer Studio** powered by the Web Audio API for drift-free multi-track audio playback, and provides seamless post-separation workflow integration!
+
+### ✨ Features & Enhancements
 - **STEM Extractor RAM & Memory Optimization:**
   - **Memory Saver Mode:** Added a one-click Memory Saver toggle (enabled by default) that optimizes segment sizes and overrides model configs to prevent memory spikes.
   - **DirectML Acceleration & Memory Patch:** Automatically applies DirectML patches on Windows to eliminate memory leaks and crashes on AMD, Intel, and NVIDIA GPUs.
@@ -30,11 +51,8 @@ See the assets below to download this version.
 The Windows portable executable requires the Microsoft Edge WebView2 Runtime.
 
 **Full Changelog**: https://github.com/neondeveloperz/remixer-tools/compare/v0.3.0...v0.3.1
-<<<<<<< HEAD
 
 ## 🚀 What's New in v0.3.0
-=======
->>>>>>> develop
 
 This major update introduces the **AI Model Store**, a brand new **Global Stem Player UI**, theme customization (Light & Dark modes), and extensive cross-platform performance enhancements for macOS and Windows!
 
