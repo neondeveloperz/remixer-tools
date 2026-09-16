@@ -601,7 +601,7 @@ export function LibraryDashboard({
                       size="sm"
                       onClick={() => {
                         const dir = stemItems[0]?.path.replace(/[/\\][^/\\]+$/, "");
-                        if (dir) openPath(dir);
+                        if (dir) invoke("open_path", { path: dir });
                       }}
                       className="gap-1.5"
                     >
@@ -802,7 +802,7 @@ export function LibraryDashboard({
                     size="icon"
                     onClick={() => {
                       const dir = file.path.replace(/[/\\][^/\\]+$/, "");
-                      if (dir) openPath(dir);
+                      if (dir) invoke("open_path", { path: dir });
                     }}
                     className="h-8 w-8"
                     title="Open folder in File Explorer"

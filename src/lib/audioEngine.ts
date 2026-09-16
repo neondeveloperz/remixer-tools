@@ -148,7 +148,9 @@ export class WebAudioMultiTrackEngine {
             } catch {
               // Fallback to Tauri asset protocol via convertFileSrc
               const fileUrl = convertFileSrc(track.path);
-              const res = await fetch(fileUrl);
+              // Ensure # and ? in filenames don't break the fetch URL parsing
+              const safeUrl = fileUrl.replace(/#/g, "%23").replace(/\?/g, "%3F");
+              const res = await fetch(safeUrl);
               arrayBuffer = await res.arrayBuffer();
             }
           }
