@@ -29,7 +29,7 @@ interface DownloadItem {
   total: string;
   eta: string;
   filepath?: string;
-  status: 'initializing' | 'downloading' | 'completed' | 'error';
+  status: 'initializing' | 'downloading' | 'analyzing' | 'completed' | 'error';
   log: string[];
 }
 
@@ -84,14 +84,58 @@ export function YtDlp() {
       console.log("[yt-dlp]", event.payload);
     });
 
-    const unlistenDone = listen<string>("ytdlp-done", (event) => {
+    const unlistenDone = listen<string>("ytdlp-done", async (event) => {
       const id = event.payload;
-      setDownloads(prev => prev.map(d => {
-        if (d.id === id) {
-          return { ...d, status: 'completed', progress: 100, eta: '00:00' };
+      
+      // We need to get the latest filepath to analyze
+      setDownloads(prev => {
+        const d = prev.find(item => item.id === id);
+        if (d && d.filepath) {
+          // Trigger analysis asynchronously
+          (async () => {
+            try {
+              // Update status to analyzing
+              setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
+              
+              const res = await invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", {
+                filePath: d.filepath
+              });
+              
+              setDownloads(current => current.map(item => {
+                if (item.id === id) {
+                  return { 
+                    ...item, 
+                    status: 'completed', 
+                    progress: 100, 
+                    eta: '00:00',
+                    filepath: res.new_path || item.filepath
+                  };
+                }
+                return item;
+              }));
+            } catch (e) {
+              console.error("Analysis failed:", e);
+              // Complete it anyway if analysis fails
+              setDownloads(current => current.map(item => {
+                if (item.id === id) {
+                  return { ...item, status: 'completed', progress: 100, eta: '00:00' };
+                }
+                return item;
+              }));
+            }
+          })();
+          
+          // Return unchanged for now, the async block will update it
+          return prev;
         }
-        return d;
-      }));
+        
+        return prev.map(item => {
+          if (item.id === id) {
+            return { ...item, status: 'completed', progress: 100, eta: '00:00' };
+          }
+          return item;
+        });
+      });
     });
 
     const unlistenFilepath = listen<{id: string, path: string}>("ytdlp-filepath", (event) => {
@@ -311,6 +355,9 @@ export function YtDlp() {
                         {item.status === 'initializing' && (
                           <span>Initializing...</span>
                         )}
+                        {item.status === 'analyzing' && (
+                          <span className="text-blue-400 font-medium animate-pulse">Analyzing BPM/Key...</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -353,7 +400,7 @@ export function YtDlp() {
                       </Button>
                     </>
                   )}
-                  {item.status !== 'downloading' && item.status !== 'initializing' && (
+                  {item.status !== 'downloading' && item.status !== 'initializing' && item.status !== 'analyzing' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)} title="Remove">
                       <X className="h-4 w-4" />
                     </Button>

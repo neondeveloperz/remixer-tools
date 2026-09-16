@@ -8,12 +8,14 @@ pub mod storage;
 pub mod downloader;
 pub mod extractor;
 pub mod ai_models;
+pub mod analyzer;
 
 use settings::*;
 use storage::*;
 use downloader::*;
 use extractor::*;
 use ai_models::*;
+use analyzer::*;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -85,7 +87,8 @@ pub fn run() {
             download_ai_model,
             delete_ai_model,
             import_custom_model,
-            open_models_directory
+            open_models_directory,
+            analyze_and_rename_audio
         ])
         .on_page_load(|webview, payload| {
             if webview.label() == "main" && matches!(payload.event(), PageLoadEvent::Finished) {

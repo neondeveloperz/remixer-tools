@@ -239,6 +239,19 @@ export function StemExtractor({
           const ext = path.split('.').pop()?.toLowerCase();
           if (['mp3', 'wav', 'flac', 'ogg', 'm4a'].includes(ext || '')) {
             setInputFile(path);
+            // Auto analyze
+            setExtractLog(prev => [...prev, "Analyzing BPM & Key..."]);
+            invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", { filePath: path })
+              .then(res => {
+                if (res.new_path) setInputFile(res.new_path);
+                if (res.bpm && res.key) {
+                  setExtractLog(prev => [...prev, `Analysis Complete: ${res.bpm} BPM, ${res.key}`]);
+                }
+              })
+              .catch(e => {
+                console.error("Analysis failed", e);
+                setExtractLog(prev => [...prev, `Analysis skipped or failed: ${e}`]);
+              });
           }
         }
       }
@@ -275,6 +288,19 @@ export function StemExtractor({
       });
       if (selected && typeof selected === 'string') {
         setInputFile(selected);
+        // Auto analyze
+        setExtractLog(prev => [...prev, "Analyzing BPM & Key..."]);
+        invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", { filePath: selected })
+          .then(res => {
+            if (res.new_path) setInputFile(res.new_path);
+            if (res.bpm && res.key) {
+              setExtractLog(prev => [...prev, `Analysis Complete: ${res.bpm} BPM, ${res.key}`]);
+            }
+          })
+          .catch(e => {
+            console.error("Analysis failed", e);
+            setExtractLog(prev => [...prev, `Analysis skipped or failed: ${e}`]);
+          });
       }
     } catch (e) {
       console.error("Failed to select file:", e);
