@@ -2,12 +2,10 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -25,20 +23,11 @@ import {
   Loader2,
   Store,
   Zap,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Mic,
-  Disc3,
-  Activity,
-  FolderOpen,
   Sliders,
 } from "lucide-react";
-import { usePlayer, type TrackInfo, getTrackKey } from "@/contexts/PlayerContext";
+import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { DawTrackMixer } from "@/components/daw-track-mixer";
 import rawCatalog from "@/lib/model-catalog.json";
 
 interface ProgressPayload {
@@ -183,60 +172,7 @@ export function StemExtractor({
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
-  const [extractedTracks, setExtractedTracks] = useState<TrackInfo[]>([]);
 
-  const activeTracks = extractedTracks.length > 0 ? extractedTracks : player.tracks;
-
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getStemBadgeStyle = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes("vocal")) {
-      return {
-        bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-        icon: Mic,
-      };
-    }
-    if (lower.includes("drum")) {
-      return {
-        bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-        icon: Disc3,
-      };
-    }
-    if (lower.includes("bass")) {
-      return {
-        bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-        icon: Activity,
-      };
-    }
-    if (lower.includes("guitar")) {
-      return {
-        bg: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
-        icon: Music,
-      };
-    }
-    if (lower.includes("piano")) {
-      return {
-        bg: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
-        icon: Music,
-      };
-    }
-    if (lower.includes("instrumental") || lower.includes("inst")) {
-      return {
-        bg: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
-        icon: Music,
-      };
-    }
-    return {
-      bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-      icon: Music,
-    };
-  };
 
   const setupStarted = useRef(false);
 
@@ -272,7 +208,6 @@ export function StemExtractor({
               path,
             };
           });
-          setExtractedTracks(newTracks);
           player.loadTracks(newTracks);
           onExtractionCompleteRef.current?.();
         }
@@ -603,7 +538,6 @@ export function StemExtractor({
                       const stemName = extractStemName(filename);
                       return { name: stemName, path };
                     });
-                    setExtractedTracks(tracks);
                     player.loadTracks(tracks);
                     onExtractionCompleteRef.current?.();
                   }
