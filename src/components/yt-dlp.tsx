@@ -52,14 +52,14 @@ export function YtDlp() {
   const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
-    const unlistenProgress = listen<{id: string, data: string}>("ytdlp-progress", (event) => {
+    const unlistenProgress = listen<{ id: string, data: string }>("ytdlp-progress", (event) => {
       const { id, data } = event.payload;
       try {
         // data looks like: {"progress": "12.3%", "speed": "1.24MiB/s", "eta": "00:45", "downloaded": "12MiB", "total": "100MiB"}
         const parsed = JSON.parse(data);
         const percentRaw = parsed.progress?.replace('%', '')?.trim() || '0';
         const percent = percentRaw !== 'NA' ? parseFloat(percentRaw) : 0;
-        
+
         setDownloads(prev => prev.map(d => {
           if (d.id === id) {
             return {
@@ -86,7 +86,7 @@ export function YtDlp() {
 
     const unlistenDone = listen<string>("ytdlp-done", async (event) => {
       const id = event.payload;
-      
+
       // We need to get the latest filepath to analyze
       setDownloads(prev => {
         const d = prev.find(item => item.id === id);
@@ -96,17 +96,17 @@ export function YtDlp() {
             try {
               // Update status to analyzing
               setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
-              
+
               const res = await invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", {
                 filePath: d.filepath
               });
-              
+
               setDownloads(current => current.map(item => {
                 if (item.id === id) {
-                  return { 
-                    ...item, 
-                    status: 'completed', 
-                    progress: 100, 
+                  return {
+                    ...item,
+                    status: 'completed',
+                    progress: 100,
                     eta: '00:00',
                     filepath: res.new_path || item.filepath
                   };
@@ -124,11 +124,11 @@ export function YtDlp() {
               }));
             }
           })();
-          
+
           // Return unchanged for now, the async block will update it
           return prev;
         }
-        
+
         return prev.map(item => {
           if (item.id === id) {
             return { ...item, status: 'completed', progress: 100, eta: '00:00' };
@@ -138,7 +138,7 @@ export function YtDlp() {
       });
     });
 
-    const unlistenFilepath = listen<{id: string, path: string}>("ytdlp-filepath", (event) => {
+    const unlistenFilepath = listen<{ id: string, path: string }>("ytdlp-filepath", (event) => {
       const { id, path } = event.payload;
       setDownloads(prev => prev.map(d => {
         if (d.id === id) {
@@ -164,12 +164,12 @@ export function YtDlp() {
   const startDownload = async () => {
     if (!url) return;
     setIsInitializing(true);
-    
+
     try {
       // 1. Get video info
       const infoStr = await invoke<string>("get_video_info", { url });
       const info = JSON.parse(infoStr);
-      
+
       const newItem: DownloadItem = {
         id: Math.random().toString(36).substring(7),
         url,
@@ -185,18 +185,18 @@ export function YtDlp() {
         status: 'initializing',
         log: []
       };
-      
+
       setDownloads(prev => [newItem, ...prev]);
       setUrl("");
-      
+
       // 2. Start the actual download
-      await invoke("run_ytdlp", { 
-        id: newItem.id, 
-        url: newItem.url, 
-        format: newItem.format, 
-        quality: newItem.quality 
+      await invoke("run_ytdlp", {
+        id: newItem.id,
+        url: newItem.url,
+        format: newItem.format,
+        quality: newItem.quality
       });
-      
+
     } catch (e) {
       console.error("Failed to start download:", e);
       alert("Failed to get video info. Is the URL correct?");
@@ -228,11 +228,11 @@ export function YtDlp() {
           <div className="flex flex-col gap-2">
             <div className="space-y-1">
               <Label htmlFor="video-url">Video URL</Label>
-              <Input 
+              <Input
                 id="video-url"
-                placeholder="https://www.youtube.com/watch?v=..." 
-                value={url} 
-                onChange={(e) => setUrl(e.target.value)} 
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
                 disabled={isInitializing}
               />
             </div>
@@ -246,6 +246,7 @@ export function YtDlp() {
                   <SelectContent>
                     <SelectItem value="video">Video (MP4)</SelectItem>
                     <SelectItem value="mp3">Audio (MP3)</SelectItem>
+                    <SelectItem value="mp3_meta">Audio (MP3 with Meta)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -327,18 +328,18 @@ export function YtDlp() {
                     <div className="text-muted-foreground text-xs">No Thumb</div>
                   )}
                 </div>
-                
+
                 {/* Info & Progress */}
                 <div className="flex-1 flex flex-col justify-between p-3 min-w-0">
                   <div className="flex justify-between items-start">
                     <div className="truncate pr-4">
                       <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full mr-2">
-                        {item.quality === 'best' ? 'Best' : item.quality} {item.format.toUpperCase()}
+                        {item.quality === 'best' ? 'Best' : item.quality} {item.format === 'mp3_meta' ? 'MP3 + Meta' : item.format.toUpperCase()}
                       </span>
                       <span className="font-medium text-sm truncate">{item.title}</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-1.5">
                     <Progress value={item.progress} className="h-1.5" />
                     <div className="flex justify-between text-[11px] text-muted-foreground">
@@ -362,9 +363,9 @@ export function YtDlp() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Actions */}
-                <div className="w-16 border-l flex flex-col items-center justify-center gap-2 bg-muted/20">
+                <div className="w-16 border-l flex flex-col items-center justify-center gap-2">
                   {item.status === 'downloading' && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                       <Pause className="h-4 w-4" />
@@ -374,7 +375,7 @@ export function YtDlp() {
                     <>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={async () => {
                         if (item.filepath) {
-                          player.loadTracks([{ name: item.title, path: item.filepath }]);
+                          player.loadTracks([{ name: item.title, path: item.filepath, coverUrl: item.thumbnail }]);
                         } else {
                           // Fallback to file picker if filepath wasn't captured
                           try {

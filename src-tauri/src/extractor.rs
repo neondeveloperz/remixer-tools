@@ -305,9 +305,23 @@ pub async fn run_stem_extractor(
         return Err("audio-separator not found. Please wait for setup to complete.".to_string());
     }
 
+fn sanitize_folder_name(name: &str) -> String {
+    let invalid = ['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
+    let cleaned: String = name
+        .chars()
+        .map(|c| if invalid.contains(&c) { '_' } else { c })
+        .collect();
+    let trimmed = cleaned.trim().trim_matches('.');
+    if trimmed.is_empty() {
+        "Untitled".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
     ensure_separator_dml_patch(&python_path);
 
-    let target_dir = get_storage_dirs_internal(&app).extractor_dir;
+    let target_base_dir = get_storage_dirs_internal(&app).stems_dir;
     let models_dir = get_models_dir(&app);
 
     app.emit(
@@ -321,17 +335,20 @@ pub async fn run_stem_extractor(
 
     tauri::async_runtime::spawn_blocking(move || {
         let start_time = std::time::SystemTime::now();
-        let out_dir = if target_dir.is_empty() {
-            std::env::current_dir().unwrap_or_default()
-        } else {
-            std::path::PathBuf::from(&target_dir)
-        };
         let input_file_path = std::path::PathBuf::from(&input_file);
         let input_stem = input_file_path
             .file_stem()
             .and_then(|s| s.to_str())
-            .unwrap_or_default()
+            .unwrap_or("Untitled")
             .to_string();
+
+        let folder_title = sanitize_folder_name(&input_stem);
+        let out_dir = if target_base_dir.is_empty() {
+            std::env::current_dir().unwrap_or_default().join("stems").join(&folder_title)
+        } else {
+            std::path::PathBuf::from(&target_base_dir).join(&folder_title)
+        };
+        let _ = std::fs::create_dir_all(&out_dir);
 
         let mut cmd = std::process::Command::new(&separator_path).hide_window();
 
@@ -451,9 +468,7 @@ pub async fn run_stem_extractor(
 
         cmd.arg("--model_file_dir").arg(&models_dir);
 
-        if !target_dir.is_empty() {
-            cmd.arg("--output_dir").arg(&target_dir);
-        }
+        cmd.arg("--output_dir").arg(&out_dir);
 
         let mut child = match cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
             Ok(c) => c,

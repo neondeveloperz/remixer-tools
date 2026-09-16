@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,6 +26,61 @@ export function StemPlayer() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragTime, setDragTime] = useState(0);
+  const [extractedCover, setExtractedCover] = useState<string | null>(null);
+  const [hasImageError, setHasImageError] = useState(false);
+
+  const activeTrack = tracks[0];
+  const activeCover = activeTrack?.coverUrl || extractedCover;
+
+  useEffect(() => {
+    let isMounted = true;
+    setExtractedCover(null);
+    setHasImageError(false);
+
+    if (!activeTrack || activeTrack.coverUrl) {
+      return;
+    }
+
+    // 1. Fast cache check from localStorage remixer_downloads
+    try {
+      const saved = localStorage.getItem("remixer_downloads");
+      if (saved && activeTrack.path) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const filename = activeTrack.path.split(/[/\\]/).pop() || "";
+          const fileBase = filename.replace(/\.[^/.]+$/, "");
+          const found = parsed.find(
+            (item: any) =>
+              item.filepath === activeTrack.path ||
+              (item.title && (filename.includes(item.title) || item.title.includes(fileBase)))
+          );
+          if (found?.thumbnail && isMounted) {
+            setExtractedCover(found.thumbnail);
+            return;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // 2. Extract embedded cover art from audio file metadata via backend
+    if (activeTrack.path && !activeTrack.isUrl) {
+      invoke<string | null>("get_audio_cover", { filePath: activeTrack.path })
+        .then((cover) => {
+          if (isMounted && cover) {
+            setExtractedCover(cover);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not extract cover art:", err);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTrack?.path, activeTrack?.coverUrl]);
 
   if (!isVisible || tracks.length === 0) return null;
 
@@ -64,11 +120,18 @@ export function StemPlayer() {
       </div>
 
       <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto h-16 px-4 md:px-6">
-        {/* Left: Track Info */}
+        {/* Left: Track Info & Album Art */}
         <div className="flex items-center flex-1 min-w-0 gap-3 pr-4 overflow-hidden">
-          <div className="h-10 w-10 bg-primary/10 text-primary rounded-md flex items-center justify-center shrink-0 border border-primary/20">
+          <div className="h-10 w-10 bg-primary/10 text-primary rounded-md flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden shadow-xs">
             {isLoadingBuffers ? (
               <Loader2 className="h-5 w-5 animate-spin" />
+            ) : activeCover && !hasImageError ? (
+              <img
+                src={activeCover}
+                alt={activeTrack?.name || "Cover art"}
+                className="h-full w-full object-cover"
+                onError={() => setHasImageError(true)}
+              />
             ) : (
               <Music className="h-5 w-5" />
             )}

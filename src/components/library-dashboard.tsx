@@ -48,6 +48,7 @@ interface StorageDirs {
   base_dir: string;
   library_dir: string;
   extractor_dir: string;
+  stems_dir?: string;
 }
 
 interface SavedDownloadMetadata {
@@ -249,12 +250,23 @@ export function LibraryDashboard({
       player.togglePlayPause();
       return;
     }
-    const trackName = file.stem_type || extractStemName(file.name);
-    player.loadTracks([{ name: trackName, path: file.path }]);
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const meta =
+      downloadMeta[file.path] ||
+      downloadMeta[file.name] ||
+      downloadMeta[baseName] ||
+      Object.values(downloadMeta).find(
+        (m) =>
+          m.title &&
+          (file.name.toLowerCase().includes(m.title.toLowerCase()) ||
+            m.title.toLowerCase().includes(baseName.toLowerCase()))
+      );
+    const trackName = meta?.title || file.stem_type || extractStemName(file.name);
+    player.loadTracks([{ name: trackName, path: file.path, coverUrl: meta?.thumbnail }]);
   };
 
   // Handle Play Stem Group
-  const handlePlayStemGroup = (_groupName: string, stemFiles: StorageFileItem[]) => {
+  const handlePlayStemGroup = (groupName: string, stemFiles: StorageFileItem[]) => {
     const isCurrentGroup =
       player.tracks.length === stemFiles.length &&
       stemFiles.every((sf) => player.tracks.some((t) => t.path === sf.path));
@@ -262,9 +274,18 @@ export function LibraryDashboard({
       navigateToMixer?.();
       return;
     }
+    const groupMeta =
+      downloadMeta[groupName] ||
+      Object.values(downloadMeta).find(
+        (m) =>
+          m.title &&
+          (groupName.toLowerCase().includes(m.title.toLowerCase()) ||
+            m.title.toLowerCase().includes(groupName.toLowerCase()))
+      );
     const tracks: TrackInfo[] = stemFiles.map((sf) => ({
       name: sf.stem_type || extractStemName(sf.name),
       path: sf.path,
+      coverUrl: groupMeta?.thumbnail,
     }));
     player.loadTracks(tracks);
     navigateToMixer?.();
@@ -370,11 +391,12 @@ export function LibraryDashboard({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => invoke("open_storage_folder", { folderType: "extractor" })}
+            onClick={() => invoke("open_storage_folder", { folderType: "stems" })}
             className="gap-1.5"
+            title="Open stems directory"
           >
             <Music className="h-4 w-4" />
-            Extractor
+            STEMs
           </Button>
           <Button
             variant="secondary"

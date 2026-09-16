@@ -1,5 +1,39 @@
 # Changelog
 
+## 🚀 What's New in v0.4.3
+- **Audio Player Album Art & Embedded Cover Extraction:**
+  - Integrated album artwork display directly into the floating `StemPlayer` mini-player bar with rounded borders and responsive sizing.
+  - Implemented backend Tauri command `get_audio_cover` powered by FFmpeg to extract embedded ID3 APIC / Vorbis cover art directly into Base64 Data URLs without creating temporary files.
+  - Added 3-tier cover resolution fallback (`coverUrl` -> `remixer_downloads` local cache -> embedded metadata extraction -> default icon).
+  - Extended `PlayerContext`, `LibraryDashboard`, and `YtDlp` components to transmit cover artwork to the player engine.
+- **Structured Song-Specific Stems Storage:**
+  - Migrated the default stems output directory from a flat `remixer-tools/extractor` folder to structured `remixer-tools/stems/[Song Title]/` subdirectories.
+  - Auto-sanitized folder names to prevent invalid filesystem characters across Windows, macOS, and Linux.
+  - Implemented automatic migration of legacy stems from `extractor/` into their respective song subfolders.
+  - Added automatic cleanup of empty parent song folders upon deleting all contained stems.
+- **DAW Open Folder & Windows Path Normalization:**
+  - Resolved the "Open Folder" button issue in the DAW STEM Mixer by switching to native Tauri `open_path` invocations instead of restricted plugin-opener permissions.
+  - Normalized filesystem path separators for Windows `explorer.exe` and added auto-resolution to parent folder if pointing to a file.
+  - Added a direct "Open Stems Folder" button on the STEM Extractor page.
+- **MP3 with Metadata & Quality Improvements:**
+  - Added "MP3 with Meta" format option in Downloader with full ID3 tags, artist, album, and thumbnail embedding via yt-dlp.
+  - Enforced 320kbps high-quality audio bitrate for MP3 best quality downloads.
+- **Theme & UI Improvements:**
+  - Added a Light/Dark Theme toggle with light theme as the initial default.
+  - Fixed dropdown menu positioning and slider thumb clipping in player components.
+
+## 🚀 What's New in v0.4.2
+- **Bug Fixes:**
+  - Fixed a TypeScript compilation error that broke CI pipelines due to an unused `openPath` import in `library-dashboard.tsx`.
+
+## 🚀 What's New in v0.4.1
+- **BPM & Key Detection:** 
+  - Automatically analyzes imported and downloaded audio files using `librosa` (in an isolated Python environment).
+  - Calculates the track's tempo (BPM) and musical key (via Krumhansl-Schmuckler profiles) and appends this data to the filename seamlessly.
+- **App Sidebar Grouping:**
+  - Redesigned the navigation sidebar to group menus logically into **"Studio Tools"** and **"Library & Assets"** for better UX.
+- **Backend Architecture Refactor:**
+  - Split the monolithic `lib.rs` file into modular components (`models.rs`, `settings.rs`, `storage.rs`, `downloader.rs`, `extractor.rs`, `ai_models.rs`, and `analyzer.rs`), improving maintainability and development speed.
 ## 🚀 What's New in v0.4.0
 
 This release introduces the all-new **History & Library Dashboard** for centralized media management, automatic partitioned file storage, one-click stem group playback in the DAW STEM Mixer Studio, and seamless integration between YouTube downloads and AI stem extraction!

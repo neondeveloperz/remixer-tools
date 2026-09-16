@@ -3,7 +3,7 @@ import { DawTrackMixer } from "@/components/daw-track-mixer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sliders, Music, Sparkles, FolderArchive, Plus } from "lucide-react";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { invoke } from "@tauri-apps/api/core";
 import { extractStemName } from "@/lib/utils";
 
 interface StemMixerPageProps {
@@ -95,10 +95,21 @@ export function StemMixerPage({ onNavigateToExtractor, onNavigateToLibrary }: St
         <div className="space-y-4">
           <DawTrackMixer
             tracks={player.tracks}
-            onOpenFolder={() => {
-              if (player.tracks[0]?.path) {
-                const dir = player.tracks[0].path.replace(/[/\\][^/\\]+$/, "");
-                openPath(dir);
+            onOpenFolder={async () => {
+              const firstTrack = player.tracks[0];
+              if (firstTrack?.path && !firstTrack.isUrl) {
+                const dir = firstTrack.path.replace(/[/\\][^/\\]+$/, "");
+                try {
+                  await invoke("open_path", { path: dir });
+                  return;
+                } catch (e) {
+                  console.warn("Failed to open dir via open_path:", e);
+                }
+              }
+              try {
+                await invoke("open_storage_folder", { folderType: "stems" });
+              } catch (e) {
+                console.error("Failed to open stems storage folder:", e);
               }
             }}
           />

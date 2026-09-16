@@ -585,6 +585,15 @@ export function StemExtractor({
                 <Sliders className="h-4 w-4" /> Open STEM Mixer
               </Button>
             )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => invoke("open_storage_folder", { folderType: "stems" })}
+              className="gap-1.5"
+              title="Open folder where extracted stems are stored"
+            >
+              <FolderOpenIcon className="h-4 w-4" /> Open Stems Folder
+            </Button>
           </div>
 
           {extractLog.length > 0 && (

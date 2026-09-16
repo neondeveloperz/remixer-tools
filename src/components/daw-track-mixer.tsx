@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { usePlayer, getTrackKey, type TrackInfo } from "@/contexts/PlayerContext";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, FolderOpen, Loader2 } from "lucide-react";
@@ -128,7 +129,7 @@ function WedgeVolumeSlider({
       isDragging.current = false;
       try {
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -197,6 +198,28 @@ function formatTimeWithTenths(timeSec: number): string {
 export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, className }: DawTrackMixerProps) {
   const player = usePlayer();
   const activeTracks = propTracks || player.tracks;
+
+  const handleOpenFolder = async () => {
+    if (onOpenFolder) {
+      onOpenFolder();
+      return;
+    }
+    const firstTrack = activeTracks[0];
+    if (firstTrack?.path && !firstTrack.isUrl) {
+      const dir = firstTrack.path.replace(/[/\\][^/\\]+$/, "");
+      try {
+        await invoke("open_path", { path: dir });
+        return;
+      } catch (e) {
+        console.warn("Failed to open dir via open_path:", e);
+      }
+    }
+    try {
+      await invoke("open_storage_folder", { folderType: "stems" });
+    } catch (e) {
+      console.error("Failed to open stems storage folder:", e);
+    }
+  };
 
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
@@ -267,7 +290,7 @@ export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, classNa
       setIsScrubbing(false);
       try {
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -372,12 +395,13 @@ export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, classNa
             </Button>
           )}
 
-          {onOpenFolder && (
+          {activeTracks.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={onOpenFolder}
+              onClick={handleOpenFolder}
               className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground hover:text-foreground border-[#2a2e40] bg-[#1a1d2b]"
+              title="Open folder containing stems"
             >
               <FolderOpen className="h-3.5 w-3.5" />
               <span className="hidden md:inline">Open Folder</span>
