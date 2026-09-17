@@ -9,11 +9,11 @@ export function Help() {
   const [version, setVersion] = useState("0.4.0");
 
   useEffect(() => {
-    getVersion().then(setVersion).catch(() => {});
+    getVersion().then(setVersion).catch(() => { });
   }, []);
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Help & Documentation</CardTitle>
@@ -31,7 +31,7 @@ export function Help() {
                 <p>5. Click <strong>Download</strong>. The file will be saved to your default download directory.</p>
               </AccordionContent>
             </AccordionItem>
-            
+
             <AccordionItem value="item-2">
               <AccordionTrigger>Where are my downloaded files saved?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">

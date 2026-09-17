@@ -23,7 +23,9 @@ import {
   ArrowRight,
   X,
   SlidersHorizontal,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import rawCatalog from "@/lib/model-catalog.json";
 
@@ -84,6 +86,13 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
   const [customStemsInput, setCustomStemsInput] = useState("Vocals, Instrumental");
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedTab, selectedArch, sortBy]);
 
   const loadInstalled = useCallback(async () => {
     try {
@@ -230,6 +239,12 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
       return 0;
     });
   }, [allDisplayModels, selectedTab, selectedArch, searchQuery, sortBy]);
+
+  const totalPages = Math.ceil(filteredModels.length / ITEMS_PER_PAGE);
+  const paginatedModels = filteredModels.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleDownload = async (filename: string) => {
     try {
@@ -517,9 +532,10 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
           )}
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredModels.map((m) => {
-            const isDownloading = !!downloading[m.filename];
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {paginatedModels.map((m) => {
+              const isDownloading = !!downloading[m.filename];
             const downloadLog = downloading[m.filename];
             const isDeleting = deletingFile === m.filename;
 
@@ -664,6 +680,31 @@ export function ModelStore({ onSelectModelForExtraction }: ModelStoreProps) {
               </Card>
             );
           })}
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+              </Button>
+              <div className="text-sm font-medium text-muted-foreground px-4">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

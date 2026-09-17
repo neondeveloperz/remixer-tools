@@ -84,6 +84,7 @@ pub fn run() {
             get_video_info,
             setup_stem_extractor,
             run_stem_extractor,
+            cancel_stem_extractor,
             get_installed_models,
             download_ai_model,
             delete_ai_model,

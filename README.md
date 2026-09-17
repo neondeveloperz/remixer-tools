@@ -13,6 +13,14 @@ Built with **Tauri**, **React**, and **TypeScript**, Remixer Tools runs entirely
   - Powered by industry-leading models including **Demucs v4 (6-stems)**, **UVR MDX-Net**, and **Kim Vocal 2 (RoFormer)**.
   - Isolate Vocals, Drums, Bass, Guitar, Piano, and other elements with unprecedented clarity.
   - Selectable output formats (FLAC, WAV, MP3, OGG).
+  - **Cancelable Extraction:** Safely stop the extraction process at any time.
+  - **Drag and Drop Interface:** Quickly import audio files by dropping them directly into the app.
+- **Audio Analysis & Playback**
+  - **BPM & Key Detection:** Automatically analyzes the tempo and musical key of your imported or downloaded tracks.
+  - **Built-in STEM Mixer:** Preview separated tracks with a real-time waveform visualizer, mute, and solo controls.
+- **Library & Model Management**
+  - **History & Library Dashboard:** Easily organize, play, and manage your downloaded files and extracted stems.
+  - **AI Model Store:** Browse, download, and manage AI models directly from the app, or import your own custom PyTorch/ONNX models.
 - **Hardware Acceleration**
   - **macOS:** Automatic Metal Performance Shaders (MPS) and CoreML utilization for Apple Silicon.
   - **Windows:** Support for DirectML (AMD/Intel) and CUDA (NVIDIA) to drastically reduce processing time.

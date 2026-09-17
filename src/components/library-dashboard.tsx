@@ -29,6 +29,8 @@ import {
   Sliders,
   Calendar,
   FileAudio,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
@@ -86,6 +88,13 @@ export function LibraryDashboard({
   const [groupBySong, setGroupBySong] = useState(true);
   const [downloadMeta, setDownloadMeta] = useState<Record<string, SavedDownloadMetadata>>({});
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, typeFilter, searchQuery, sortBy, groupBySong]);
 
   // Load saved metadata from localStorage
   const loadSavedMeta = useCallback(() => {
@@ -355,8 +364,22 @@ export function LibraryDashboard({
     return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
   };
 
+  const isGroupView = activeTab === "stems" && groupBySong;
+  const stemGroupEntries = Object.entries(stemGroups);
+  
+  const totalItems = isGroupView ? stemGroupEntries.length : filteredFiles.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  
+  const paginatedGroups = isGroupView 
+    ? stemGroupEntries.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : [];
+    
+  const paginatedFiles = !isGroupView
+    ? filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : [];
+
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 mx-auto pb-12">
       {/* Top Header & Storage Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -564,7 +587,7 @@ export function LibraryDashboard({
       ) : activeTab === "stems" && groupBySong ? (
         /* Grouped Stems View */
         <div className="space-y-4">
-          {Object.entries(stemGroups).map(([groupTitle, stemItems]) => {
+          {paginatedGroups.map(([groupTitle, stemItems]) => {
             const totalGroupSize = stemItems.reduce((acc, f) => acc + f.size_bytes, 0);
             const latestMod = Math.max(...stemItems.map((f) => f.modified_time));
 
@@ -575,11 +598,10 @@ export function LibraryDashboard({
             return (
               <Card
                 key={groupTitle}
-                className={`overflow-hidden border transition-all ${
-                  isCurrentGroup
+                className={`overflow-hidden border transition-all ${isCurrentGroup
                     ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
                     : "border-border/80 bg-card hover:border-border"
-                }`}
+                  }`}
               >
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 border-b border-border/50">
                   <div className="flex items-center gap-3.5 min-w-0">
@@ -675,8 +697,8 @@ export function LibraryDashboard({
                             title="Play track solo"
                           >
                             {player.tracks.length === 1 &&
-                            player.tracks[0]?.path === stem.path &&
-                            player.isPlaying ? (
+                              player.tracks[0]?.path === stem.path &&
+                              player.isPlaying ? (
                               <Pause className="h-3.5 w-3.5 fill-current text-primary" />
                             ) : (
                               <Play className="h-3.5 w-3.5" />
@@ -704,7 +726,7 @@ export function LibraryDashboard({
       ) : (
         /* Flat List View (Downloads or Individual Stems) */
         <div className="grid grid-cols-1 gap-2.5">
-          {filteredFiles.map((file) => {
+          {paginatedFiles.map((file) => {
             const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
             const isStem = file.category === "stem";
             const baseName = file.name.replace(/\.[^/.]+$/, "");
@@ -725,11 +747,10 @@ export function LibraryDashboard({
             return (
               <div
                 key={file.path}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${
-                  isCurrent
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${isCurrent
                     ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
                     : "border-border/80 bg-card hover:border-border hover:shadow-xs"
-                }`}
+                  }`}
               >
                 {/* Left: Icon / Thumbnail & Details */}
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -847,6 +868,30 @@ export function LibraryDashboard({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+          </Button>
+          <div className="text-sm font-medium text-muted-foreground px-4">
+            Page {currentPage} of {totalPages}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
         </div>
       )}
     </div>

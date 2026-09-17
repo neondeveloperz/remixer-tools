@@ -94,7 +94,7 @@ export function Settings() {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full mx-auto">
       <CardHeader>
         <CardTitle>Settings</CardTitle>
         <CardDescription>Configure global preferences for Remixer Tools.</CardDescription>
