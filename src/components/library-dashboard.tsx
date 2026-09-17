@@ -29,6 +29,8 @@ import {
   Sliders,
   Calendar,
   FileAudio,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
@@ -86,6 +88,13 @@ export function LibraryDashboard({
   const [groupBySong, setGroupBySong] = useState(true);
   const [downloadMeta, setDownloadMeta] = useState<Record<string, SavedDownloadMetadata>>({});
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, typeFilter, searchQuery, sortBy, groupBySong]);
 
   // Load saved metadata from localStorage
   const loadSavedMeta = useCallback(() => {
@@ -355,6 +364,20 @@ export function LibraryDashboard({
     return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
   };
 
+  const isGroupView = activeTab === "stems" && groupBySong;
+  const stemGroupEntries = Object.entries(stemGroups);
+  
+  const totalItems = isGroupView ? stemGroupEntries.length : filteredFiles.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  
+  const paginatedGroups = isGroupView 
+    ? stemGroupEntries.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : [];
+    
+  const paginatedFiles = !isGroupView
+    ? filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : [];
+
   return (
     <div className="space-y-6 mx-auto pb-12">
       {/* Top Header & Storage Summary */}
@@ -564,7 +587,7 @@ export function LibraryDashboard({
       ) : activeTab === "stems" && groupBySong ? (
         /* Grouped Stems View */
         <div className="space-y-4">
-          {Object.entries(stemGroups).map(([groupTitle, stemItems]) => {
+          {paginatedGroups.map(([groupTitle, stemItems]) => {
             const totalGroupSize = stemItems.reduce((acc, f) => acc + f.size_bytes, 0);
             const latestMod = Math.max(...stemItems.map((f) => f.modified_time));
 
@@ -703,7 +726,7 @@ export function LibraryDashboard({
       ) : (
         /* Flat List View (Downloads or Individual Stems) */
         <div className="grid grid-cols-1 gap-2.5">
-          {filteredFiles.map((file) => {
+          {paginatedFiles.map((file) => {
             const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
             const isStem = file.category === "stem";
             const baseName = file.name.replace(/\.[^/.]+$/, "");
@@ -845,6 +868,30 @@ export function LibraryDashboard({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+          </Button>
+          <div className="text-sm font-medium text-muted-foreground px-4">
+            Page {currentPage} of {totalPages}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
         </div>
       )}
     </div>
