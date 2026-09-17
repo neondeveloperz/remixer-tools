@@ -181,7 +181,32 @@ export function StemExtractor({
     });
 
     const unlistenExtract = listen<string>("stem-extract-log", (event) => {
-      setExtractLog(prev => [...prev, event.payload]);
+      setExtractLog(prev => {
+        let text = event.payload || "";
+
+        // Clean up \r characters from tqdm output
+        const parts = text.split('\r');
+        text = parts[parts.length - 1].trim();
+
+        if (!text) return prev;
+
+        // Check if current text is a progress bar update
+        const isProgress = text.includes('%|') && (text.includes('it/s]') || text.includes('s/it]') || text.includes('s/step]'));
+
+        if (prev.length > 0) {
+          const lastLine = prev[prev.length - 1];
+          const lastIsProgress = lastLine.includes('%|') && (lastLine.includes('it/s]') || lastLine.includes('s/it]') || lastLine.includes('s/step]'));
+
+          // Replace the last progress line with the new one instead of appending
+          if (isProgress && lastIsProgress) {
+            const newLog = [...prev];
+            newLog[newLog.length - 1] = text;
+            return newLog;
+          }
+        }
+
+        return [...prev, text];
+      });
     });
 
     const unlistenExtractDone = listen<boolean>("stem-extract-done", (event) => {
@@ -551,45 +576,8 @@ export function StemExtractor({
                 Extract STEMs
               </Button>
             )}
-            <Button
-              variant="outline"
-              disabled={isExtracting}
-              onClick={async () => {
-                try {
-                  const { open } = await import("@tauri-apps/plugin-dialog");
-                  const selected = await open({
-                    multiple: true,
-                    filters: [{ name: "Audio", extensions: ["mp3", "wav", "flac", "ogg", "m4a"] }],
-                  });
 
-                  if (selected && Array.isArray(selected) && selected.length > 0) {
-                    const tracks: TrackInfo[] = selected.map((path) => {
-                      const parts = path.split(/[/\\]/);
-                      const filename = parts[parts.length - 1];
-                      const stemName = extractStemName(filename);
-                      return { name: stemName, path };
-                    });
-                    player.loadTracks(tracks);
-                    onExtractionCompleteRef.current?.();
-                  }
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-              className="gap-1.5"
-            >
-              <Music className="h-4 w-4" /> Load Stems to Mixer
-            </Button>
-            {onExtractionComplete && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onExtractionComplete}
-                className="gap-1.5"
-              >
-                <Sliders className="h-4 w-4" /> Open STEM Mixer
-              </Button>
-            )}
+
             <Button
               type="button"
               variant="outline"

@@ -379,6 +379,9 @@ fn sanitize_folder_name(name: &str) -> String {
 
         cmd.env("PATH", new_path);
         cmd.env("PYTHONUNBUFFERED", "1");
+        
+        // Force Demucs to cache its PyTorch models in our models folder instead of /tmp/audio-separator-models
+        cmd.env("TORCH_HOME", &models_dir);
 
         // Memory optimization: prevent CPU thread explosion across all logical cores
         cmd.env("OMP_NUM_THREADS", "4");
@@ -507,48 +510,76 @@ fn sanitize_folder_name(name: &str) -> String {
         let stdout = child.stdout.take().unwrap();
         let app_stdout = app_clone.clone();
         std::thread::spawn(move || {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    if let Some(pos) = line.find("Exported audio file successfully to ") {
-                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
-                        let file_path = if let Some(idx) = rest.find(" with ") {
-                            rest[..idx].trim()
-                        } else {
-                            rest.trim()
-                        };
-                        if !file_path.is_empty() {
-                            if let Ok(mut list) = logged_files_out.lock() {
-                                list.push(file_path.to_string());
+            use std::io::Read;
+            let mut reader = BufReader::new(stdout);
+            let mut buf = Vec::new();
+            let mut byte = [0u8; 1];
+            while let Ok(1) = reader.read(&mut byte) {
+                let b = byte[0];
+                if b == b'\n' || b == b'\r' {
+                    let line = String::from_utf8_lossy(&buf).to_string();
+                    if !line.trim().is_empty() {
+                        if let Some(pos) = line.find("Exported audio file successfully to ") {
+                            let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                            let file_path = if let Some(idx) = rest.find(" with ") {
+                                rest[..idx].trim()
+                            } else {
+                                rest.trim()
+                            };
+                            if !file_path.is_empty() {
+                                if let Ok(mut list) = logged_files_out.lock() {
+                                    list.push(file_path.to_string());
+                                }
                             }
                         }
+                        let _ = app_stdout.emit("stem-extract-log", line);
                     }
-                    let _ = app_stdout.emit("stem-extract-log", line);
+                    buf.clear();
+                } else {
+                    buf.push(b);
                 }
+            }
+            if !buf.is_empty() {
+                let line = String::from_utf8_lossy(&buf).to_string();
+                let _ = app_stdout.emit("stem-extract-log", line);
             }
         });
 
         let stderr = child.stderr.take().unwrap();
         let app_stderr = app_clone.clone();
         std::thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    if let Some(pos) = line.find("Exported audio file successfully to ") {
-                        let rest = &line[pos + "Exported audio file successfully to ".len()..];
-                        let file_path = if let Some(idx) = rest.find(" with ") {
-                            rest[..idx].trim()
-                        } else {
-                            rest.trim()
-                        };
-                        if !file_path.is_empty() {
-                            if let Ok(mut list) = logged_files_err.lock() {
-                                list.push(file_path.to_string());
+            use std::io::Read;
+            let mut reader = BufReader::new(stderr);
+            let mut buf = Vec::new();
+            let mut byte = [0u8; 1];
+            while let Ok(1) = reader.read(&mut byte) {
+                let b = byte[0];
+                if b == b'\n' || b == b'\r' {
+                    let line = String::from_utf8_lossy(&buf).to_string();
+                    if !line.trim().is_empty() {
+                        if let Some(pos) = line.find("Exported audio file successfully to ") {
+                            let rest = &line[pos + "Exported audio file successfully to ".len()..];
+                            let file_path = if let Some(idx) = rest.find(" with ") {
+                                rest[..idx].trim()
+                            } else {
+                                rest.trim()
+                            };
+                            if !file_path.is_empty() {
+                                if let Ok(mut list) = logged_files_err.lock() {
+                                    list.push(file_path.to_string());
+                                }
                             }
                         }
+                        let _ = app_stderr.emit("stem-extract-log", line);
                     }
-                    let _ = app_stderr.emit("stem-extract-log", line);
+                    buf.clear();
+                } else {
+                    buf.push(b);
                 }
+            }
+            if !buf.is_empty() {
+                let line = String::from_utf8_lossy(&buf).to_string();
+                let _ = app_stderr.emit("stem-extract-log", line);
             }
         });
 

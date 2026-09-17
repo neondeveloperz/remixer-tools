@@ -270,13 +270,13 @@ pub async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
         }
     }
 
-    // Check for updates
-    app.emit("setup-log", "Checking for yt-dlp updates...")
-        .unwrap();
-    let _ = std::process::Command::new(&ytdlp_path)
-        .hide_window()
-        .arg("-U")
-        .status();
+    // Skip auto-update on startup to avoid long waiting times
+    // app.emit("setup-log", "Checking for yt-dlp updates...")
+    //     .unwrap();
+    // let _ = std::process::Command::new(&ytdlp_path)
+    //     .hide_window()
+    //     .arg("-U")
+    //     .status();
 
     app.emit("setup-log", "All dependencies are ready.")
         .unwrap();
