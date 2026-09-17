@@ -1,7 +1,7 @@
 {
   "name": "remixer-tools",
   "private": true,
-  "version": "0.4.3",
+  "version": "1.0.0",
   "description": "A powerful, cross-platform desktop application designed for DJs, producers, and audio engineers.",
   "author": "armzi & x2infinity",
   "type": "module",
@@ -28,7 +28,9 @@
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-log": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-shell": "~2",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "lucide-react": "^1.44.0",

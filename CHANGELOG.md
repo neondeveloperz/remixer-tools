@@ -1,5 +1,19 @@
 # Changelog
 
+## 🚀 What's New in v1.0.0
+- **Built-in Auto Updater:**
+  - Integrated Tauri's native auto-updater with GitHub Releases. The app will now automatically check for new versions on startup, display release notes, and install updates seamlessly without requiring manual downloads.
+- **Optimized Application Startup & Setup:**
+  - Disabled the blocking `yt-dlp` auto-update check during startup to drastically reduce application boot time and avoid hanging on slow network connections.
+- **AI Stem Extraction Fixes:**
+  - Fixed an `Invalid Checksum` error for Demucs model downloads by configuring the `TORCH_HOME` environment variable to permanently cache PyTorch `.th` model checkpoints in the app's primary model directory instead of the volatile `/tmp` folder.
+  - Resolved messy overlapping real-time logs in the STEM Extractor page. The backend now reads logs byte-by-byte to flush carriage return (`\r`) updates correctly, allowing `tqdm` progress bars to render smoothly.
+- **UI/UX & Pagination Improvements:**
+  - Implemented custom pagination systems for both the **Model Store** (12 items/page) and the **History & Library Dashboard** (10 items/page), complete with automatic page resets upon searching or filtering.
+  - Fixed the "Download History" card layout in the Downloader page: removed excessive default container padding so video thumbnails stretch seamlessly to full card height, and resized action buttons to prevent vertical overflow/clipping.
+- **Backend Maintenance:**
+  - Resolved minor Rust compiler warnings (`unused_variables`, `dead_code`) for cleaner builds.
+
 ## 🚀 What's New in v0.4.3
 - **Audio Player Album Art & Embedded Cover Extraction:**
   - Integrated album artwork display directly into the floating `StemPlayer` mini-player bar with rounded borders and responsive sizing.

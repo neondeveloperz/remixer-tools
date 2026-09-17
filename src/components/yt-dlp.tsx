@@ -318,14 +318,14 @@ export function YtDlp() {
             </div>
           </div>
           {downloads.map(item => (
-            <Card key={item.id} className="overflow-hidden">
+            <Card key={item.id} className="overflow-hidden p-0">
               <div className="flex h-24">
                 {/* Thumbnail */}
-                <div className="w-40 shrink-0 bg-muted flex items-center justify-center overflow-hidden">
+                <div className="relative w-40 shrink-0 bg-muted overflow-hidden">
                   {item.thumbnail ? (
-                    <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                    <img src={item.thumbnail} alt={item.title} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
-                    <div className="text-muted-foreground text-xs">No Thumb</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs">No Thumb</div>
                   )}
                 </div>
 
@@ -365,15 +365,15 @@ export function YtDlp() {
                 </div>
 
                 {/* Actions */}
-                <div className="w-16 border-l flex flex-col items-center justify-center gap-2">
+                <div className="w-16 border-l flex flex-col items-center justify-center gap-1">
                   {item.status === 'downloading' && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
                       <Pause className="h-4 w-4" />
                     </Button>
                   )}
                   {item.status === 'completed' && (
                     <>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={async () => {
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={async () => {
                         if (item.filepath) {
                           player.loadTracks([{ name: item.title, path: item.filepath, coverUrl: item.thumbnail }]);
                         } else {
@@ -396,13 +396,13 @@ export function YtDlp() {
                       }} title="Play File">
                         <Play className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={openDownloadFolder} title="Open Folder">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={openDownloadFolder} title="Open Folder">
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </>
                   )}
                   {item.status !== 'downloading' && item.status !== 'initializing' && item.status !== 'analyzing' && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)} title="Remove">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeDownload(item.id)} title="Remove">
                       <X className="h-4 w-4" />
                     </Button>
                   )}

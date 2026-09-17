@@ -76,6 +76,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_SIGNING_IDENTITY: ${{ startsWith(matrix.platform, 'macos-') && '-' || '' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           tagName: v__VERSION__
           releaseName: v__VERSION__
@@ -89,7 +90,7 @@ jobs:
           args: ${{ matrix.args }}
           assetNamePattern: ${{ matrix.assetPattern }}
           uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
-          includeUpdaterJson: false
+          includeUpdaterJson: true
 
       - name: Upload Windows portable executable
         if: matrix.portableUpload
