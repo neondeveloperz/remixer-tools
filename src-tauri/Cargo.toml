@@ -1,6 +1,6 @@
 [package]
 name = "remixer-tools"
-version = "0.4.4"
+version = "1.0.0"
 description = "A powerful, cross-platform desktop application designed for DJs, producers, and audio engineers."
 authors = ["armzi & x2infinity"]
 edition = "2021"
@@ -31,6 +31,8 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 futures-util = "0.3.34"
 base64 = "0.22"
+tauri-plugin-updater = "2.11.0"
+tauri-plugin-process = "2.3.1"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

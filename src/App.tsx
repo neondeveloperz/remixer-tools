@@ -17,6 +17,7 @@ import { LibraryDashboard } from "@/components/library-dashboard"
 import { StemMixerPage } from "@/components/stem-mixer-page"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
+import { Updater } from "@/components/updater"
 
 function AppContent() {
   const { isVisible } = usePlayer()
@@ -115,6 +116,7 @@ function AppContent() {
         </SidebarInset>
       </SidebarProvider>
       <StemPlayer />
+      <Updater />
     </TooltipProvider>
   )
 }

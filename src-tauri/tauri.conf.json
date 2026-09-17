@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Remixer Tools",
-  "version": "0.4.4",
+  "version": "1.0.0",
   "identifier": "com.armzi.remixer-tools",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -33,6 +33,14 @@
           "**"
         ]
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/neondeveloperz/remixer-tools/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk0NDZDRDAyRUY4QjlDRjIKUldUeW5JdnZBczFHbE5RQVFrcnRab3ZsY0JnQ2xPeGYyc1lIYkhTWGYrUWFkcUtjT0pIaFZuYVcK"
     }
   },
   "bundle": {

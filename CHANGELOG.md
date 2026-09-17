@@ -1,6 +1,8 @@
 # Changelog
 
-## 🚀 What's New in v0.4.4
+## 🚀 What's New in v1.0.0
+- **Built-in Auto Updater:**
+  - Integrated Tauri's native auto-updater with GitHub Releases. The app will now automatically check for new versions on startup, display release notes, and install updates seamlessly without requiring manual downloads.
 - **Optimized Application Startup & Setup:**
   - Disabled the blocking `yt-dlp` auto-update check during startup to drastically reduce application boot time and avoid hanging on slow network connections.
 - **AI Stem Extraction Fixes:**
