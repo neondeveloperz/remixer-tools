@@ -46,7 +46,6 @@ interface InstalledModel {
 }
 
 interface StemExtractorProps {
-  onBusyChange?: (busy: boolean) => void;
   selectedModel?: string;
   onModelChange?: (model: string) => void;
   onNavigateToModelStore?: () => void;
@@ -55,7 +54,6 @@ interface StemExtractorProps {
 }
 
 export function StemExtractor({
-  onBusyChange,
   selectedModel,
   onModelChange,
   onNavigateToModelStore,
@@ -68,11 +66,7 @@ export function StemExtractor({
   const [isSettingUp, setIsSettingUp] = useState(true);
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    if (onBusyChange) {
-      onBusyChange(isSettingUp);
-    }
-  }, [isSettingUp, onBusyChange]);
+
   const [setupLog, setSetupLog] = useState<string[]>([]);
   const [progresses, setProgresses] = useState<Record<string, number>>({});
 

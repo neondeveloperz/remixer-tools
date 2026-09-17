@@ -22,15 +22,11 @@ function AppContent() {
   const { isVisible } = usePlayer()
   const [activePage, setActivePage] = useState("downloader")
   const [isReady, setIsReady] = useState(false)
-  const [isAppBusy, setIsAppBusy] = useState(false)
+
   const [selectedModel, setSelectedModel] = useState("htdemucs.yaml")
   const [extractorInputFile, setExtractorInputFile] = useState("")
 
   const handleSelectPage = (page: string) => {
-    if (isAppBusy) {
-      alert("Please wait for the installation or current operation to finish before switching pages.");
-      return;
-    }
     setActivePage(page);
   }
 
@@ -69,7 +65,7 @@ function AppContent() {
           } as CSSProperties
         }
       >
-        <AppSidebar variant="inset" activePage={activePage} onSelectPage={handleSelectPage} isBusy={isAppBusy} />
+        <AppSidebar variant="inset" activePage={activePage} onSelectPage={handleSelectPage} />
         <SidebarInset>
           <SiteHeader title={getPageTitle()} />
           <div className="flex flex-1 flex-col">
@@ -81,7 +77,6 @@ function AppContent() {
                   </div>
                   <div className={activePage === "stem-extractor" ? "block" : "hidden"}>
                     <StemExtractor
-                      onBusyChange={setIsAppBusy}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
                       onNavigateToModelStore={() => setActivePage("model-store")}
