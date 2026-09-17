@@ -39,7 +39,7 @@ export function StemMixerPage({ onNavigateToExtractor, onNavigateToLibrary }: St
   const hasTracks = player.tracks && player.tracks.length > 0;
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-10">
+    <div className="flex flex-col gap-6 mx-auto pb-10">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

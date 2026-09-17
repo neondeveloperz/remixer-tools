@@ -356,7 +356,7 @@ export function LibraryDashboard({
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 mx-auto pb-12">
       {/* Top Header & Storage Summary */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -575,11 +575,10 @@ export function LibraryDashboard({
             return (
               <Card
                 key={groupTitle}
-                className={`overflow-hidden border transition-all ${
-                  isCurrentGroup
+                className={`overflow-hidden border transition-all ${isCurrentGroup
                     ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
                     : "border-border/80 bg-card hover:border-border"
-                }`}
+                  }`}
               >
                 <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 border-b border-border/50">
                   <div className="flex items-center gap-3.5 min-w-0">
@@ -675,8 +674,8 @@ export function LibraryDashboard({
                             title="Play track solo"
                           >
                             {player.tracks.length === 1 &&
-                            player.tracks[0]?.path === stem.path &&
-                            player.isPlaying ? (
+                              player.tracks[0]?.path === stem.path &&
+                              player.isPlaying ? (
                               <Pause className="h-3.5 w-3.5 fill-current text-primary" />
                             ) : (
                               <Play className="h-3.5 w-3.5" />
@@ -725,11 +724,10 @@ export function LibraryDashboard({
             return (
               <div
                 key={file.path}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${
-                  isCurrent
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all ${isCurrent
                     ? "border-primary/60 bg-card shadow-sm ring-1 ring-primary/30"
                     : "border-border/80 bg-card hover:border-border hover:shadow-xs"
-                }`}
+                  }`}
               >
                 {/* Left: Icon / Thumbnail & Details */}
                 <div className="flex items-center gap-3.5 min-w-0">
