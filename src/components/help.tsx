@@ -20,7 +20,7 @@ export function Help() {
           <CardDescription>Learn how to use Remixer Tools and troubleshoot common issues.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger>How to use the Video Downloader?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">

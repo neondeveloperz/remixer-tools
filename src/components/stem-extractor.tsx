@@ -23,7 +23,6 @@ import {
   Loader2,
   Store,
   Zap,
-  Sliders,
 } from "lucide-react";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
