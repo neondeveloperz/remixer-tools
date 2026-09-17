@@ -119,7 +119,7 @@ export function StemPlayer() {
         />
       </div>
 
-      <div className="flex items-center justify-between w-full max-w-screen-2xl mx-auto h-16 px-4 md:px-6">
+      <div className="flex items-center justify-between w-full mx-auto h-16 px-4 md:px-6">
         {/* Left: Track Info & Album Art */}
         <div className="flex items-center flex-1 min-w-0 gap-3 pr-4 overflow-hidden">
           <div className="h-10 w-10 bg-primary/10 text-primary rounded-md flex items-center justify-center shrink-0 border border-primary/20 overflow-hidden shadow-xs">
