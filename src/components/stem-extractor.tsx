@@ -321,6 +321,15 @@ export function StemExtractor({
     }
   };
 
+  const cancelExtraction = async () => {
+    try {
+      await invoke("cancel_stem_extractor");
+      setExtractLog(prev => [...prev, "Cancelling extraction..."]);
+    } catch (e) {
+      console.error("Failed to cancel:", e);
+    }
+  };
+
   if (isSettingUp) {
     return (
       <Card className="w-full max-w-3xl mx-auto mt-10">
@@ -533,13 +542,15 @@ export function StemExtractor({
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={startExtraction} disabled={isExtracting || !inputFile} className="flex-1 font-semibold">
-              {isExtracting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing (This will take a while)...</>
-              ) : (
-                "Extract STEMs"
-              )}
-            </Button>
+            {isExtracting ? (
+              <Button onClick={cancelExtraction} variant="destructive" className="flex-1 font-semibold">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cancel Extraction
+              </Button>
+            ) : (
+              <Button onClick={startExtraction} disabled={!inputFile} className="flex-1 font-semibold">
+                Extract STEMs
+              </Button>
+            )}
             <Button
               variant="outline"
               disabled={isExtracting}

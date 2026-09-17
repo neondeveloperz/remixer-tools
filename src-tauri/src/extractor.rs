@@ -1,6 +1,24 @@
 use tauri::{Manager, Emitter};
 use std::io::{BufRead, BufReader};
 use std::process::Stdio;
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static CURRENT_EXTRACTOR_PID: AtomicU32 = AtomicU32::new(0);
+
+#[tauri::command]
+pub fn cancel_stem_extractor() {
+    let pid = CURRENT_EXTRACTOR_PID.swap(0, Ordering::SeqCst);
+    if pid != 0 {
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = std::process::Command::new("kill").arg("-9").arg(pid.to_string()).spawn();
+        }
+        #[cfg(target_os = "windows")]
+        {
+            let _ = std::process::Command::new("taskkill").arg("/F").arg("/T").arg("/PID").arg(pid.to_string()).spawn();
+        }
+    }
+}
 
 use crate::models::*;
 use crate::storage::get_storage_dirs_internal;
@@ -479,6 +497,8 @@ fn sanitize_folder_name(name: &str) -> String {
             }
         };
 
+        CURRENT_EXTRACTOR_PID.store(child.id(), Ordering::SeqCst);
+
         let logged_files: std::sync::Arc<std::sync::Mutex<Vec<String>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let logged_files_out = logged_files.clone();
@@ -536,6 +556,8 @@ fn sanitize_folder_name(name: &str) -> String {
             Ok(status) => status.success(),
             Err(_) => false,
         };
+
+        CURRENT_EXTRACTOR_PID.store(0, Ordering::SeqCst);
 
         let mut output_files: Vec<String> = Vec::new();
 
