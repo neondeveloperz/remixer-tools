@@ -267,6 +267,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(unused_variables)]
 pub fn ensure_separator_dml_patch(python_path: &std::path::Path) {
     #[cfg(target_os = "windows")]
     {

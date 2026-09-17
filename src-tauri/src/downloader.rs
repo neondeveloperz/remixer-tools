@@ -66,6 +66,7 @@ pub async fn download_file_with_progress(
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
+#[allow(dead_code)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub trait CommandExtForWindows {
