@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlayer } from "@/contexts/PlayerContext";
-import { extractStemName } from "@/lib/utils";
 
 interface MidiExtractorProps {
   initialFile?: string;
@@ -40,15 +39,6 @@ interface ConversionResult {
   duration?: number;
   engine?: string;
   file_size?: number;
-}
-
-interface QuickStemItem {
-  name: string;
-  path: string;
-  category: string;
-  stem_type?: string;
-  parent_group?: string;
-  size_bytes: number;
 }
 
 interface ExistingMidiFile {
@@ -66,9 +56,9 @@ export function MidiExtractor({
   const [selectedFilePath, setSelectedFilePath] = useState(initialFile);
   const [isConverting, setIsConverting] = useState(false);
   const [result, setResult] = useState<ConversionResult | null>(null);
-  const [recentStems, setRecentStems] = useState<QuickStemItem[]>([]);
   const [existingMidis, setExistingMidis] = useState<ExistingMidiFile[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [selectedEngine, setSelectedEngine] = useState("basic-pitch");
   const [selectedPreset, setSelectedPreset] = useState("general");
   const [copied, setCopied] = useState(false);
 
@@ -78,23 +68,10 @@ export function MidiExtractor({
     }
   }, [initialFile]);
 
-  // Load storage files to populate both stems and existing MIDI files
+  // Load storage files to populate existing MIDI files
   const loadStorageFiles = async () => {
     try {
       const files = await invoke<any[]>("list_storage_files");
-      const stems = files
-        .filter((f) => f.category === "stem")
-        .slice(0, 10)
-        .map((f) => ({
-          name: f.name,
-          path: f.path,
-          category: f.category,
-          stem_type: f.stem_type || extractStemName(f.name),
-          parent_group: f.parent_group,
-          size_bytes: f.size_bytes,
-        }));
-      setRecentStems(stems);
-
       const midis = files
         .filter((f) => f.category === "midi" || f.extension === "mid" || f.extension === "midi")
         .map((f) => ({
@@ -196,7 +173,10 @@ export function MidiExtractor({
         engine?: string;
         error?: string;
         message?: string;
-      }>("convert_audio_to_midi", { filePath: selectedFilePath });
+      }>("convert_audio_to_midi", {
+        filePath: selectedFilePath,
+        engine: selectedEngine,
+      });
 
       const midiPath = res.midi_path || res.midiPath;
       const isSuccess = res.success === true || res.status === "success";
@@ -284,40 +264,17 @@ export function MidiExtractor({
             </div>
           </div>
 
-          {/* Quick Select from Stems */}
-          {recentStems.length > 0 && (
+          {/* Options Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Quick Select from Stems</Label>
-              <div className="flex flex-wrap gap-2">
-                {recentStems.map((stem) => (
-                  <button
-                    key={stem.path}
-                    type="button"
-                    onClick={() => {
-                      setSelectedFilePath(stem.path);
-                      setResult(null);
-                    }}
-                    className={`text-xs px-2.5 py-1 rounded-md border transition-colors flex items-center gap-1.5 cursor-pointer ${
-                      selectedFilePath === stem.path
-                        ? "border-primary bg-primary/10 text-primary font-medium"
-                        : "border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">
-                      {stem.stem_type || "Stem"}
-                    </Badge>
-                    <span className="truncate max-w-[180px]">{stem.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Options Grid (Matching stem-extractor.tsx layout) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-6 space-y-2">
               <Label>AI Engine</Label>
-              <Select value="basic-pitch" disabled>
+              <Select
+                value={selectedEngine}
+                onValueChange={(val) => {
+                  if (val) setSelectedEngine(val);
+                }}
+                disabled={isConverting}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="AI Engine" />
                 </SelectTrigger>
@@ -325,11 +282,14 @@ export function MidiExtractor({
                   <SelectItem value="basic-pitch">
                     Spotify Basic Pitch (Multi-Pitch Neural Net)
                   </SelectItem>
+                  <SelectItem value="onset">
+                    Onset-to-MIDI (Pitch Estimation & Monophonic)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="md:col-span-3 space-y-2">
+            <div className="space-y-2">
               <Label>Transcription Mode</Label>
               <Select
                 value={selectedPreset}
@@ -346,18 +306,6 @@ export function MidiExtractor({
                   <SelectItem value="bass">Bass & 808s Focus</SelectItem>
                   <SelectItem value="vocal">Vocal & Lead Melody</SelectItem>
                   <SelectItem value="fast">Fast Arpeggios / Stabs</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="md:col-span-3 space-y-2">
-              <Label>Output Format</Label>
-              <Select value="mid" disabled>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mid">.MID (Standard MIDI File)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

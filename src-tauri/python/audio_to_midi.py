@@ -135,24 +135,37 @@ def main():
     if out_dir and not os.path.exists(out_dir):
         os.makedirs(out_dir, exist_ok=True)
 
-    # 1. Try Spotify's Basic Pitch
-    try:
-        result = convert_with_basic_pitch(audio_path, output_midi_path)
-        print(json.dumps(result))
-        return
-    except Exception as bp_err:
-        # 2. Fallback to Onset-to-MIDI
+    engine_choice = sys.argv[3].lower() if len(sys.argv) >= 4 and sys.argv[3] else "basic-pitch"
+
+    if engine_choice == "onset":
         try:
             result = convert_with_onset_fallback(audio_path, output_midi_path)
-            result["fallback_reason"] = str(bp_err)
             print(json.dumps(result))
             return
         except Exception as fb_err:
             print(json.dumps({
                 "status": "error",
-                "message": f"Basic Pitch error: {str(bp_err)}; Fallback error: {str(fb_err)}"
+                "message": f"Onset-to-MIDI error: {str(fb_err)}"
             }))
             sys.exit(1)
+    else:
+        # Default: Try Spotify's Basic Pitch, fallback to Onset if needed
+        try:
+            result = convert_with_basic_pitch(audio_path, output_midi_path)
+            print(json.dumps(result))
+            return
+        except Exception as bp_err:
+            try:
+                result = convert_with_onset_fallback(audio_path, output_midi_path)
+                result["fallback_reason"] = str(bp_err)
+                print(json.dumps(result))
+                return
+            except Exception as fb_err:
+                print(json.dumps({
+                    "status": "error",
+                    "message": f"Basic Pitch error: {str(bp_err)}; Fallback error: {str(fb_err)}"
+                }))
+                sys.exit(1)
 
 if __name__ == "__main__":
     main()

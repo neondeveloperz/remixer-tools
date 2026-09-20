@@ -123,6 +123,7 @@ pub async fn convert_audio_to_midi(
     app: tauri::AppHandle,
     file_path: String,
     output_path: Option<String>,
+    engine: Option<String>,
 ) -> Result<MidiConversionResponse, String> {
     log::info!("Starting convert_audio_to_midi for: {}", file_path);
     let path = PathBuf::from(&file_path);
@@ -177,6 +178,7 @@ pub async fn convert_audio_to_midi(
     let file_path_clone = file_path.clone();
     let script_path_clone = script_path.clone();
     let target_out_arg = target_out_str.clone();
+    let engine_arg = engine.unwrap_or_else(|| "basic-pitch".to_string());
 
     let output = tauri::async_runtime::spawn_blocking(move || {
         // Ensure dependencies exist in background thread
@@ -193,7 +195,8 @@ pub async fn convert_audio_to_midi(
 
         cmd.arg(&script_path_clone)
             .arg(&file_path_clone)
-            .arg(&target_out_arg);
+            .arg(&target_out_arg)
+            .arg(&engine_arg);
 
         cmd.stdout(Stdio::piped())
             .stderr(Stdio::piped())
