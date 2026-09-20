@@ -31,7 +31,10 @@ import {
   FileAudio,
   ChevronLeft,
   ChevronRight,
+  Piano,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
 
@@ -40,7 +43,7 @@ export interface StorageFileItem {
   path: string;
   size_bytes: number;
   modified_time: number; // Unix timestamp in seconds
-  category: "download" | "stem";
+  category: "download" | "stem" | "midi";
   extension: string;
   stem_type?: string | null;
   parent_group?: string | null;
@@ -82,12 +85,13 @@ export function LibraryDashboard({
   const [_dirs, setDirs] = useState<StorageDirs | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "downloads" | "stems">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "downloads" | "stems" | "midi">("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "audio" | "video">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name_asc" | "size_desc">("newest");
   const [groupBySong, setGroupBySong] = useState(true);
   const [downloadMeta, setDownloadMeta] = useState<Record<string, SavedDownloadMetadata>>({});
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
+  const [midiLoading, setMidiLoading] = useState<Record<string, boolean>>({});
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -252,6 +256,55 @@ export function LibraryDashboard({
     }
   };
 
+  // Convert audio file / stem to MIDI
+  const handleConvertToMidi = async (filePath: string, fileName: string) => {
+    setMidiLoading((prev) => ({ ...prev, [filePath]: true }));
+    toast.info(`Extracting MIDI for ${fileName}...`, {
+      description: "Transcribing musical notes using Spotify Basic Pitch AI engine.",
+    });
+
+    try {
+      const res = await invoke<{
+        success?: boolean;
+        status?: string;
+        midi_path?: string;
+        midiPath?: string;
+        note_count?: number;
+        noteCount?: number;
+        duration_sec?: number;
+        engine?: string;
+        error?: string;
+        message?: string;
+      }>("convert_audio_to_midi", { filePath });
+
+      const midiPath = res.midi_path || res.midiPath;
+      const isSuccess = res.success === true || res.status === "success";
+
+      if (isSuccess && midiPath) {
+        const noteCount = res.note_count ?? res.noteCount ?? 0;
+        toast.success(`MIDI converted for ${fileName}!`, {
+          description: `${noteCount} notes transcribed. Ready for VST instruments in your DAW.`,
+          action: {
+            label: "Open Folder",
+            onClick: () => {
+              const dir = midiPath.replace(/[/\\][^/\\]+$/, "");
+              if (dir) invoke("open_path", { path: dir });
+            },
+          },
+        });
+      } else {
+        throw new Error(res.error || res.message || "Failed to convert MIDI");
+      }
+    } catch (err: any) {
+      const errMsg = typeof err === "string" ? err : err?.message || "Unknown error";
+      toast.error(`MIDI conversion failed for ${fileName}`, {
+        description: errMsg,
+      });
+    } finally {
+      setMidiLoading((prev) => ({ ...prev, [filePath]: false }));
+    }
+  };
+
   // Handle Play Single
   const handlePlaySingle = (file: StorageFileItem) => {
     const isCurrent = player.tracks.length === 1 && player.tracks[0]?.path === file.path;
@@ -307,6 +360,7 @@ export function LibraryDashboard({
         // Tab filter
         if (activeTab === "downloads" && file.category !== "download") return false;
         if (activeTab === "stems" && file.category !== "stem") return false;
+        if (activeTab === "midi" && file.category !== "midi" && file.extension !== "mid" && file.extension !== "midi") return false;
 
         // Type filter
         const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
@@ -350,6 +404,7 @@ export function LibraryDashboard({
   const totalSizeBytes = useMemo(() => files.reduce((acc, f) => acc + f.size_bytes, 0), [files]);
   const downloadFilesCount = useMemo(() => files.filter((f) => f.category === "download").length, [files]);
   const stemFilesCount = useMemo(() => files.filter((f) => f.category === "stem").length, [files]);
+  const midiFilesCount = useMemo(() => files.filter((f) => f.category === "midi" || f.extension === "mid" || f.extension === "midi").length, [files]);
 
   // Helper for stem badge color
   const getStemBadgeStyle = (stemType?: string | null) => {
@@ -420,6 +475,16 @@ export function LibraryDashboard({
           >
             <Music className="h-4 w-4" />
             STEMs
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => invoke("open_storage_folder", { folderType: "midi" })}
+            className="gap-1.5 text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+            title="Open dedicated MIDI directory"
+          >
+            <Piano className="h-4 w-4" />
+            MIDI
           </Button>
           <Button
             variant="secondary"
@@ -505,6 +570,15 @@ export function LibraryDashboard({
                 }`}
             >
               Stems ({stemFilesCount})
+            </button>
+            <button
+              onClick={() => setActiveTab("midi")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${activeTab === "midi"
+                ? "bg-background text-foreground shadow-sm text-amber-400"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              MIDI ({midiFilesCount})
             </button>
           </div>
 
@@ -707,6 +781,20 @@ export function LibraryDashboard({
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => handleConvertToMidi(stem.path, stem.name)}
+                            disabled={midiLoading[stem.path]}
+                            className="h-7 w-7 text-amber-400/80 hover:text-amber-300 hover:bg-amber-400/10"
+                            title="Convert this stem to MIDI (.mid) using Spotify Basic Pitch"
+                          >
+                            {midiLoading[stem.path] ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
+                            ) : (
+                              <Piano className="h-3.5 w-3.5 text-amber-400" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(stem.path)}
                             disabled={deletingPath === stem.path}
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -836,6 +924,25 @@ export function LibraryDashboard({
                       title="Send directly to STEM Extractor"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-primary" /> Separate STEMs
+                    </Button>
+                  )}
+
+                  {/* Convert to MIDI (for audio files & stems) */}
+                  {!isVideo && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleConvertToMidi(file.path, file.name)}
+                      disabled={midiLoading[file.path]}
+                      className="h-8 gap-1.5 text-xs font-semibold text-amber-400 border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-300"
+                      title="Convert audio to MIDI (.mid) using Spotify Basic Pitch AI"
+                    >
+                      {midiLoading[file.path] ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Piano className="h-3.5 w-3.5" />
+                      )}
+                      <span>MIDI</span>
                     </Button>
                   )}
 

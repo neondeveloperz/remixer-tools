@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders } from "lucide-react"
+import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders, Piano } from "lucide-react"
 import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
@@ -40,6 +40,14 @@ const data = {
       icon: (
         <Sliders />
       ),
+    },
+    {
+      title: "MIDI Extractor",
+      id: "midi-extractor",
+      icon: (
+        <Piano />
+      ),
+      badge: "Beta",
     },
   ],
   navLibrary: [

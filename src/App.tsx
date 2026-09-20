@@ -15,6 +15,7 @@ import { StemExtractor } from "@/components/stem-extractor"
 import { ModelStore } from "@/components/model-store"
 import { LibraryDashboard } from "@/components/library-dashboard"
 import { StemMixerPage } from "@/components/stem-mixer-page"
+import { MidiExtractor } from "@/components/midi-extractor"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
 import { Updater } from "@/components/updater"
@@ -46,6 +47,7 @@ function AppContent() {
       case "downloader": return "Downloader"
       case "stem-extractor": return "STEM Extractor"
       case "stem-mixer": return "STEM Mixer Studio"
+      case "midi-extractor": return "MIDI Extractor (Audio to MIDI)"
       case "library": return "History & Library"
       case "model-store": return "AI Model Store"
       case "settings": return "Settings"
@@ -88,6 +90,12 @@ function AppContent() {
                   <div className={activePage === "stem-mixer" ? "block" : "hidden"}>
                     <StemMixerPage
                       onNavigateToExtractor={() => setActivePage("stem-extractor")}
+                      onNavigateToLibrary={() => setActivePage("library")}
+                    />
+                  </div>
+                  <div className={activePage === "midi-extractor" ? "block" : "hidden"}>
+                    <MidiExtractor
+                      onNavigateToMixer={() => setActivePage("stem-mixer")}
                       onNavigateToLibrary={() => setActivePage("library")}
                     />
                   </div>

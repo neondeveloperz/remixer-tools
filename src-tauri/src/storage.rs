@@ -16,11 +16,13 @@ pub fn get_storage_dirs_internal(app: &tauri::AppHandle) -> StorageDirs {
 
     let library = base.join("library");
     let stems = base.join("stems");
+    let midi = base.join("midi");
     let old_extractor = base.join("extractor");
 
     let _ = std::fs::create_dir_all(&base);
     let _ = std::fs::create_dir_all(&library);
     let _ = std::fs::create_dir_all(&stems);
+    let _ = std::fs::create_dir_all(&midi);
 
     // Auto-migrate any existing stems from extractor/ into stems/<title>/
     if old_extractor.exists() && old_extractor.is_dir() {
@@ -54,6 +56,7 @@ pub fn get_storage_dirs_internal(app: &tauri::AppHandle) -> StorageDirs {
         library_dir: library.to_string_lossy().to_string(),
         extractor_dir: stems.to_string_lossy().to_string(),
         stems_dir: stems.to_string_lossy().to_string(),
+        midi_dir: midi.to_string_lossy().to_string(),
     }
 }
 
@@ -73,6 +76,7 @@ pub fn open_storage_folder(app: tauri::AppHandle, folder_type: String) -> Result
     let path = match folder_type.as_str() {
         "library" => dirs.library_dir,
         "extractor" | "stems" => dirs.stems_dir,
+        "midi" => dirs.midi_dir,
         _ => dirs.base_dir,
     };
     
@@ -143,7 +147,8 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
                     continue;
                 }
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
-                if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov") {
+                if matches!(ext.as_str(), "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac" | "mp4" | "mkv" | "webm" | "mov" | "mid" | "midi") {
+                    let is_midi = matches!(ext.as_str(), "mid" | "midi");
                     let (size_bytes, modified_time) = if let Ok(meta) = path.metadata() {
                         let size = meta.len();
                         let mod_time = meta.modified().ok()
@@ -164,10 +169,10 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
                         None
                     };
 
-                    let parent_group = if category == "stem" {
+                    let parent_group = if category == "stem" || category == "midi" {
                         let parent_dir_name = path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str());
                         let group = if let Some(dir) = parent_dir_name {
-                            if dir != "stems" && dir != "extractor" {
+                            if dir != "stems" && dir != "extractor" && dir != "midi" {
                                 dir.to_string()
                             } else if let Some(idx) = name.rfind("_(") {
                                 name[..idx].to_string()
@@ -184,6 +189,12 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
                         None
                     };
 
+                    let file_category = if is_midi {
+                        "midi".to_string()
+                    } else {
+                        category.to_string()
+                    };
+
                     let full_path_str = path.to_string_lossy().to_string();
                     if !items.iter().any(|existing| existing.path == full_path_str) {
                         items.push(StorageFileItem {
@@ -191,7 +202,7 @@ pub fn scan_folder_recursive(dir_path: &std::path::Path, category: &str, depth: 
                             path: full_path_str,
                             size_bytes,
                             modified_time,
-                            category: category.to_string(),
+                            category: file_category,
                             extension: ext,
                             stem_type,
                             parent_group,
@@ -210,11 +221,13 @@ pub fn list_storage_files(app: tauri::AppHandle) -> Result<Vec<StorageFileItem>,
 
     let library_path = std::path::PathBuf::from(&dirs.library_dir);
     let stems_path = std::path::PathBuf::from(&dirs.stems_dir);
+    let midi_path = std::path::PathBuf::from(&dirs.midi_dir);
     let base_path = std::path::PathBuf::from(&dirs.base_dir);
     let old_extractor_path = base_path.join("extractor");
 
     scan_folder_recursive(&library_path, "download", 0, &mut items);
     scan_folder_recursive(&stems_path, "stem", 0, &mut items);
+    scan_folder_recursive(&midi_path, "midi", 0, &mut items);
     if old_extractor_path.exists() {
         scan_folder_recursive(&old_extractor_path, "stem", 0, &mut items);
     }
@@ -282,7 +295,7 @@ pub fn delete_storage_file(path: String) -> Result<(), String> {
         // If parent song folder is now empty and not a root directory, remove it
         if let Some(parent) = p.parent() {
             if let Some(dir_name) = parent.file_name().and_then(|n| n.to_str()) {
-                if dir_name != "stems" && dir_name != "library" && dir_name != "extractor" {
+                if dir_name != "stems" && dir_name != "library" && dir_name != "extractor" && dir_name != "midi" {
                     if let Ok(mut entries) = std::fs::read_dir(parent) {
                         if entries.next().is_none() {
                             let _ = std::fs::remove_dir(parent);

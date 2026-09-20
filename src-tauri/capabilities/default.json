@@ -24,6 +24,8 @@
     {
       "identifier": "fs:allow-read",
       "allow": [{ "path": "**" }]
-    }
+    },
+    "updater:default",
+    "process:default"
   ]
 }

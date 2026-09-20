@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePlayer, getTrackKey, type TrackInfo } from "@/contexts/PlayerContext";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, FolderOpen, Loader2 } from "lucide-react";
+import { Play, Pause, RotateCcw, FolderOpen, Loader2, Piano, Music2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface DawTrackMixerProps {
@@ -224,6 +225,107 @@ export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, classNa
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
+  const [midiStatus, setMidiStatus] = useState<
+    Record<string, { loading: boolean; midiPath?: string; noteCount?: number; error?: string }>
+  >({});
+
+  // Check if MIDI already exists for active tracks
+  useEffect(() => {
+    let isCancelled = false;
+    activeTracks.forEach(async (track, idx) => {
+      if (!track.path || track.isUrl) return;
+      const key = getTrackKey(track, idx);
+      try {
+        const res = await invoke<{ exists: boolean; midi_path?: string }>("check_midi_exists", {
+          filePath: track.path,
+        });
+        if (!isCancelled && res.exists && res.midi_path) {
+          setMidiStatus((prev) => ({
+            ...prev,
+            [key]: {
+              loading: false,
+              midiPath: res.midi_path,
+            },
+          }));
+        }
+      } catch (err) {
+        console.debug("check_midi_exists error:", err);
+      }
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTracks]);
+
+  const handleConvertToMidi = async (track: TrackInfo, key: string) => {
+    if (!track.path || track.isUrl) return;
+
+    setMidiStatus((prev) => ({
+      ...prev,
+      [key]: { loading: true, error: undefined },
+    }));
+
+    toast.info(`Extracting MIDI for ${track.name}...`, {
+      description: "Transcribing musical notes using Spotify Basic Pitch AI engine.",
+    });
+
+    console.log("[DawTrackMixer] Converting track to MIDI:", track.path);
+
+    try {
+      const res = await invoke<{
+        success?: boolean;
+        status?: string;
+        midi_path?: string;
+        midiPath?: string;
+        note_count?: number;
+        noteCount?: number;
+        duration_sec?: number;
+        engine?: string;
+        error?: string;
+        message?: string;
+      }>("convert_audio_to_midi", { filePath: track.path });
+
+      console.log("[DawTrackMixer] Received MIDI response:", res);
+
+      const midiPath = res.midi_path || res.midiPath;
+      const isSuccess = res.success === true || res.status === "success";
+
+      if (isSuccess && midiPath) {
+        const noteCount = res.note_count ?? res.noteCount ?? 0;
+        setMidiStatus((prev) => ({
+          ...prev,
+          [key]: {
+            loading: false,
+            midiPath: midiPath,
+            noteCount: noteCount,
+          },
+        }));
+
+        toast.success(`MIDI converted for ${track.name}!`, {
+          description: `${noteCount} notes transcribed. Ready for VST instruments in your DAW.`,
+          action: {
+            label: "Open Folder",
+            onClick: () => {
+              const dir = midiPath.replace(/[/\\][^/\\]+$/, "");
+              if (dir) invoke("open_path", { path: dir });
+            },
+          },
+        });
+      } else {
+        throw new Error(res.error || res.message || "Failed to convert MIDI");
+      }
+    } catch (err: any) {
+      console.error("[DawTrackMixer] MIDI conversion error:", err);
+      const errMsg = typeof err === "string" ? err : err?.message || "Unknown error";
+      setMidiStatus((prev) => ({
+        ...prev,
+        [key]: { loading: false, error: errMsg },
+      }));
+      toast.error(`MIDI conversion failed for ${track.name}`, {
+        description: errMsg,
+      });
+    }
+  };
 
   // Global spacebar listener for play/pause
   useEffect(() => {
@@ -540,6 +642,51 @@ export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, classNa
                       <span className="text-[10px] uppercase font-bold text-white/40 tracking-wider bg-black/50 px-2 py-0.5 rounded border border-white/10">
                         {state.muted ? "Muted" : "Dimmed"}
                       </span>
+                    </div>
+                  )}
+
+                  {/* Right Side Action: Convert to MIDI Button / Status */}
+                  {track.path && !track.isUrl && (
+                    <div
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {midiStatus[key]?.loading ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-amber-500/50 text-amber-300 text-xs shadow-lg backdrop-blur-md animate-pulse">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                          <span className="font-mono text-[11px] font-medium hidden sm:inline">Extracting MIDI...</span>
+                        </div>
+                      ) : midiStatus[key]?.midiPath ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dir = midiStatus[key]?.midiPath?.replace(/[/\\][^/\\]+$/, "");
+                            if (dir) invoke("open_path", { path: dir });
+                          }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/50 text-amber-300 hover:text-amber-100 text-xs shadow-lg backdrop-blur-md transition-all group/midibtn cursor-pointer"
+                          title={`MIDI file ready: ${midiStatus[key]?.midiPath}\nClick to open containing folder.`}
+                        >
+                          <Music2 className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="font-mono text-[11px] font-bold">MIDI Ready</span>
+                          {typeof midiStatus[key]?.noteCount === "number" && (
+                            <span className="text-[10px] text-amber-300/80 hidden md:inline">
+                              ({midiStatus[key]?.noteCount} notes)
+                            </span>
+                          )}
+                          <FolderOpen className="w-3 h-3 text-amber-400/80 group-hover/midibtn:text-amber-300 ml-0.5" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleConvertToMidi(track, key)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#141724]/90 hover:bg-[#1f2438] border border-white/10 hover:border-amber-500/60 text-white/80 hover:text-amber-300 text-xs shadow-lg backdrop-blur-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer group/midibtn"
+                          title="Convert this audio track to MIDI (.mid) using Spotify Basic Pitch AI"
+                        >
+                          <Piano className="w-3.5 h-3.5 text-amber-400 group-hover/midibtn:scale-110 transition-transform" />
+                          <span className="font-medium text-[11px] tracking-wide">Convert to MIDI</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
