@@ -62,11 +62,7 @@ fn get_python_and_venv(app: &tauri::AppHandle) -> Option<(PathBuf, PathBuf)> {
 fn get_separated_midi_path(audio_path: &Path) -> PathBuf {
     let stem_filename = audio_path.file_stem().unwrap_or_default().to_string_lossy();
     let parent = audio_path.parent().unwrap_or_else(|| Path::new("."));
-
-    // Create a dedicated "midi" folder inside the parent directory
-    let midi_folder = parent.join("midi");
-    let _ = std::fs::create_dir_all(&midi_folder);
-    midi_folder.join(format!("{}.mid", stem_filename))
+    parent.join(format!("{}.mid", stem_filename))
 }
 
 fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) {
@@ -81,7 +77,7 @@ fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) {
 
     let check = check_cmd
         .arg("-c")
-        .arg("import basic_pitch, pretty_midi")
+        .arg("import basic_pitch, pretty_midi, importlib_resources")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
@@ -114,6 +110,7 @@ fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) {
             .arg("pretty-midi")
             .arg("mir-eval")
             .arg("mido")
+            .arg("importlib-resources")
             .output();
     }
 }
@@ -193,7 +190,9 @@ pub async fn convert_audio_to_midi(
             cmd.creation_flags(CREATE_NO_WINDOW);
         }
 
-        cmd.arg(&script_path_clone)
+        cmd.env("PYTHONIOENCODING", "utf-8")
+            .env("PYTHONUTF8", "1")
+            .arg(&script_path_clone)
             .arg(&file_path_clone)
             .arg(&target_out_arg)
             .arg(&engine_arg);
@@ -219,25 +218,7 @@ pub async fn convert_audio_to_midi(
                 if parsed.status == "success" {
                     let final_midi_path = parsed.midi_path.unwrap_or(target_out_str);
 
-                    // Also sync a copy to central remixer-tools/midi/<parent_group>/ if applicable
-                    let gen_path = Path::new(&final_midi_path);
-                    if gen_path.exists() {
-                        let dirs = crate::storage::get_storage_dirs_internal(&app);
-                        let central_midi = PathBuf::from(&dirs.midi_dir);
-                        let parent_name = path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()).unwrap_or("");
-                        let dest_dir = if !parent_name.is_empty() && parent_name != "stems" && parent_name != "library" && parent_name != "midi" {
-                            central_midi.join(parent_name)
-                        } else {
-                            central_midi.clone()
-                        };
-                        let _ = std::fs::create_dir_all(&dest_dir);
-                        if let Some(fname) = gen_path.file_name() {
-                            let dest_file = dest_dir.join(fname);
-                            if dest_file != gen_path {
-                                let _ = std::fs::copy(gen_path, &dest_file);
-                            }
-                        }
-                    }
+                    let _gen_path = Path::new(&final_midi_path);
 
                     return Ok(MidiConversionResponse {
                         success: true,
@@ -275,7 +256,16 @@ pub fn check_midi_exists(app: tauri::AppHandle, file_path: String) -> Result<Mid
     let stem_name = p.file_stem().unwrap_or_default().to_string_lossy();
     let parent = p.parent().unwrap_or_else(|| Path::new("."));
 
-    // Check 1: In local dedicated midi/ subfolder: parent/midi/<stem>.mid
+    // Check 1: In same directory: parent/<stem>.mid
+    let direct_midi = parent.join(format!("{}.mid", stem_name));
+    if direct_midi.exists() {
+        return Ok(MidiExistsResponse {
+            exists: true,
+            midi_path: Some(direct_midi.to_string_lossy().to_string()),
+        });
+    }
+
+    // Check 2: In local midi/ subfolder (backward compatibility): parent/midi/<stem>.mid
     let local_midi = parent.join("midi").join(format!("{}.mid", stem_name));
     if local_midi.exists() {
         return Ok(MidiExistsResponse {
@@ -284,7 +274,7 @@ pub fn check_midi_exists(app: tauri::AppHandle, file_path: String) -> Result<Mid
         });
     }
 
-    // Check 2: In central storage midi/ folder:
+    // Check 3: In central storage midi/ folder:
     let dirs = crate::storage::get_storage_dirs_internal(&app);
     let central_midi_dir = PathBuf::from(&dirs.midi_dir);
     let parent_name = parent.file_name().and_then(|n| n.to_str()).unwrap_or("");
@@ -306,12 +296,11 @@ pub fn check_midi_exists(app: tauri::AppHandle, file_path: String) -> Result<Mid
         });
     }
 
-    // Check 3: Legacy in same directory: parent/<stem>.mid
-    let direct_midi = p.with_extension("mid");
-    if direct_midi.exists() {
+    let p_ext_midi = p.with_extension("mid");
+    if p_ext_midi.exists() {
         return Ok(MidiExistsResponse {
             exists: true,
-            midi_path: Some(direct_midi.to_string_lossy().to_string()),
+            midi_path: Some(p_ext_midi.to_string_lossy().to_string()),
         });
     }
 

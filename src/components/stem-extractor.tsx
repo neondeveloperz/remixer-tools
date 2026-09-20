@@ -259,11 +259,14 @@ export function StemExtractor({
             setInputFile(path);
             // Auto analyze
             setExtractLog(prev => [...prev, "Analyzing BPM & Key..."]);
-            invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", { filePath: path })
+            invoke<{ success: boolean, new_path?: string, bpm?: number, key?: string, message?: string }>("analyze_and_rename_audio", { filePath: path })
               .then(res => {
                 if (res.new_path) setInputFile(res.new_path);
                 if (res.bpm && res.key) {
                   setExtractLog(prev => [...prev, `Analysis Complete: ${res.bpm} BPM, ${res.key}`]);
+                } else if (res.message) {
+                  const msg = res.message;
+                  setExtractLog(prev => [...prev, msg]);
                 }
               })
               .catch(e => {
@@ -308,11 +311,14 @@ export function StemExtractor({
         setInputFile(selected);
         // Auto analyze
         setExtractLog(prev => [...prev, "Analyzing BPM & Key..."]);
-        invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", { filePath: selected })
+        invoke<{ success: boolean, new_path?: string, bpm?: number, key?: string, message?: string }>("analyze_and_rename_audio", { filePath: selected })
           .then(res => {
             if (res.new_path) setInputFile(res.new_path);
             if (res.bpm && res.key) {
               setExtractLog(prev => [...prev, `Analysis Complete: ${res.bpm} BPM, ${res.key}`]);
+            } else if (res.message) {
+              const msg = res.message;
+              setExtractLog(prev => [...prev, msg]);
             }
           })
           .catch(e => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export function YtDlp() {
     return [];
   });
   const [isInitializing, setIsInitializing] = useState(false);
+  const filepathsRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     const unlistenProgress = listen<{ id: string, data: string }>("ytdlp-progress", (event) => {
@@ -58,13 +59,13 @@ export function YtDlp() {
         // data looks like: {"progress": "12.3%", "speed": "1.24MiB/s", "eta": "00:45", "downloaded": "12MiB", "total": "100MiB"}
         const parsed = JSON.parse(data);
         const percentRaw = parsed.progress?.replace('%', '')?.trim() || '0';
-        const percent = percentRaw !== 'NA' ? parseFloat(percentRaw) : 0;
+        const percent = Math.min(100, Math.max(0, parseFloat(percentRaw)));
 
         setDownloads(prev => prev.map(d => {
           if (d.id === id) {
             return {
               ...d,
-              progress: percent,
+              progress: isNaN(percent) ? d.progress : percent,
               speed: parsed.speed || d.speed,
               eta: parsed.eta || d.eta,
               downloaded: parsed.downloaded || d.downloaded,
@@ -84,68 +85,65 @@ export function YtDlp() {
       console.log("[yt-dlp]", event.payload);
     });
 
-    const unlistenDone = listen<string>("ytdlp-done", async (event) => {
-      const id = event.payload;
-
-      // We need to get the latest filepath to analyze
-      setDownloads(prev => {
-        const d = prev.find(item => item.id === id);
-        if (d && d.filepath) {
-          // Trigger analysis asynchronously
-          (async () => {
-            try {
-              // Update status to analyzing
-              setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
-
-              const res = await invoke<{ success: boolean, new_path: string, bpm: number, key: string, message: string }>("analyze_and_rename_audio", {
-                filePath: d.filepath
-              });
-
-              setDownloads(current => current.map(item => {
-                if (item.id === id) {
-                  return {
-                    ...item,
-                    status: 'completed',
-                    progress: 100,
-                    eta: '00:00',
-                    filepath: res.new_path || item.filepath
-                  };
-                }
-                return item;
-              }));
-            } catch (e) {
-              console.error("Analysis failed:", e);
-              // Complete it anyway if analysis fails
-              setDownloads(current => current.map(item => {
-                if (item.id === id) {
-                  return { ...item, status: 'completed', progress: 100, eta: '00:00' };
-                }
-                return item;
-              }));
-            }
-          })();
-
-          // Return unchanged for now, the async block will update it
-          return prev;
-        }
-
-        return prev.map(item => {
-          if (item.id === id) {
-            return { ...item, status: 'completed', progress: 100, eta: '00:00' };
-          }
-          return item;
-        });
-      });
-    });
-
     const unlistenFilepath = listen<{ id: string, path: string }>("ytdlp-filepath", (event) => {
       const { id, path } = event.payload;
+      if (id && path) {
+        filepathsRef.current[id] = path;
+      }
       setDownloads(prev => prev.map(d => {
         if (d.id === id) {
           return { ...d, filepath: path };
         }
         return d;
       }));
+    });
+
+    const unlistenDone = listen<any>("ytdlp-done", async (event) => {
+      const id = typeof event.payload === 'string' ? event.payload : event.payload?.id;
+      const targetPath = (typeof event.payload === 'object' && event.payload?.filepath)
+        ? event.payload.filepath
+        : filepathsRef.current[id];
+
+      if (targetPath) {
+        // Update status to analyzing
+        setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
+
+        try {
+          const res = await invoke<{ success: boolean, new_path?: string, bpm?: number, key?: string, message?: string }>("analyze_and_rename_audio", {
+            filePath: targetPath
+          });
+
+          const finalPath = res.new_path || targetPath;
+          setDownloads(current => current.map(item => {
+            if (item.id === id) {
+              return {
+                ...item,
+                status: 'completed',
+                progress: 100,
+                eta: '00:00',
+                filepath: finalPath
+              };
+            }
+            return item;
+          }));
+        } catch (e) {
+          console.error("Analysis failed:", e);
+          // Complete it anyway if analysis fails
+          setDownloads(current => current.map(item => {
+            if (item.id === id) {
+              return { ...item, status: 'completed', progress: 100, eta: '00:00', filepath: targetPath };
+            }
+            return item;
+          }));
+        }
+      } else {
+        setDownloads(current => current.map(item => {
+          if (item.id === id) {
+            return { ...item, status: 'completed', progress: 100, eta: '00:00' };
+          }
+          return item;
+        }));
+      }
     });
 
     return () => {

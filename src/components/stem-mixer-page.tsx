@@ -16,9 +16,11 @@ export function StemMixerPage({ onNavigateToExtractor, onNavigateToLibrary }: St
 
   const handleImportStems = async () => {
     try {
+      const dirs = await invoke<{ stems_dir: string }>("get_storage_dirs");
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
         multiple: true,
+        defaultPath: dirs?.stems_dir || undefined,
         filters: [{ name: "Audio", extensions: ["mp3", "wav", "flac", "ogg", "m4a"] }],
       });
 

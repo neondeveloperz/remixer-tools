@@ -146,8 +146,8 @@ export function Settings() {
                   <span className="h-2 w-2 rounded-full bg-purple-500 shrink-0" />
                   STEM Extractor
                 </p>
-                <p className="text-[11px] font-mono text-muted-foreground truncate" title={`${downloadDir}/extractor`}>
-                  {downloadDir ? `${downloadDir}/extractor` : "~/downloads/remixer-tools/extractor"}
+                <p className="text-[11px] font-mono text-muted-foreground truncate" title={`${downloadDir}/stems`}>
+                  {downloadDir ? `${downloadDir}/stems` : "~/downloads/remixer-tools/stems"}
                 </p>
               </div>
               <Button

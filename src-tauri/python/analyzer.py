@@ -1,6 +1,33 @@
 import sys
 import os
+import io
 import json
+import warnings
+import logging
+
+# Ensure UTF-8 output encoding on Windows (handles filenames with emojis, unicode, etc.)
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        else:
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# Suppress standard non-critical warnings and root logs
+warnings.filterwarnings("ignore")
+logging.getLogger().setLevel(logging.ERROR)
+
+# Ensure ffmpeg in PATH for audio decoding
+app_data = os.environ.get("LOCALAPPDATA", "")
+if app_data:
+    ffmpeg_dir = os.path.join(app_data, "com.armzi.remixer-tools")
+    if os.path.exists(ffmpeg_dir):
+        os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+
 import librosa
 import numpy as np
 
@@ -35,10 +62,10 @@ def analyze(file_path):
                 best_corr = corr_min
                 best_key = keys[i] + " Minor"
                 
-        if hasattr(tempo, 'item'):
-            tempo_val = float(tempo.item())
-        elif isinstance(tempo, np.ndarray) and tempo.size > 0:
+        if hasattr(tempo, '__len__') and len(tempo) > 0:
             tempo_val = float(tempo[0])
+        elif hasattr(tempo, 'item'):
+            tempo_val = float(tempo.item())
         else:
             tempo_val = float(tempo)
             

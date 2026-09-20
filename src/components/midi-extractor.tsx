@@ -22,6 +22,7 @@ import {
   Check,
   Play,
   X,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlayer } from "@/contexts/PlayerContext";
@@ -61,6 +62,8 @@ export function MidiExtractor({
   const [selectedEngine, setSelectedEngine] = useState("basic-pitch");
   const [selectedPreset, setSelectedPreset] = useState("general");
   const [copied, setCopied] = useState(false);
+  const [deletingPath, setDeletingPath] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   useEffect(() => {
     if (initialFile) {
@@ -132,9 +135,11 @@ export function MidiExtractor({
 
   const handleBrowseFile = async () => {
     try {
+      const dirs = await invoke<{ stems_dir: string }>("get_storage_dirs");
       const { open } = await import("@tauri-apps/plugin-dialog");
       const selected = await open({
         multiple: false,
+        defaultPath: dirs?.stems_dir || undefined,
         filters: [{ name: "Audio Files", extensions: ["mp3", "wav", "flac", "ogg", "m4a"] }],
       });
 
@@ -193,7 +198,7 @@ export function MidiExtractor({
         setResult(conversionRes);
 
         toast.success(`MIDI Transcription Complete!`, {
-          description: `Extracted ${noteCount} notes. Saved to dedicated midi/ folder.`,
+          description: `Extracted ${noteCount} notes. Saved in the same folder alongside audio stems.`,
         });
 
         loadStorageFiles();
@@ -218,12 +223,52 @@ export function MidiExtractor({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDeleteMidi = async (filePath: string, fileName: string) => {
+    if (!confirm(`Are you sure you want to delete "${fileName}"? This cannot be undone.`)) return;
+    try {
+      setDeletingPath(filePath);
+      await invoke("delete_storage_file", { path: filePath });
+      setExistingMidis((prev) => prev.filter((f) => f.path !== filePath));
+      if (result?.midi_path === filePath) {
+        setResult(null);
+      }
+      toast.success(`Deleted ${fileName}`);
+    } catch (e: any) {
+      console.error("Failed to delete MIDI file:", e);
+      toast.error("Failed to delete MIDI file", {
+        description: typeof e === "string" ? e : e?.message || "Unknown error occurred.",
+      });
+    } finally {
+      setDeletingPath(null);
+    }
+  };
+
+  const handleClearAllMidis = async () => {
+    if (!confirm(`Are you sure you want to delete all ${existingMidis.length} converted MIDI files? This cannot be undone.`)) return;
+    try {
+      setIsDeletingAll(true);
+      await Promise.all(
+        existingMidis.map((item) => invoke("delete_storage_file", { path: item.path }))
+      );
+      setExistingMidis([]);
+      setResult(null);
+      toast.success("All MIDI history files deleted");
+    } catch (e: any) {
+      console.error("Failed to clear MIDI history:", e);
+      toast.error("Failed to clear MIDI history", {
+        description: typeof e === "string" ? e : e?.message || "Unknown error occurred.",
+      });
+      loadStorageFiles();
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-6 relative">
       <Card
-        className={`w-full transition-colors duration-200 ${
-          isDraggingFile ? "border-primary border-2 border-dashed bg-primary/5" : ""
-        }`}
+        className={`w-full transition-colors duration-200 ${isDraggingFile ? "border-primary border-2 border-dashed bg-primary/5" : ""
+          }`}
       >
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -330,11 +375,33 @@ export function MidiExtractor({
             <Button
               type="button"
               variant="outline"
-              onClick={() => invoke("open_storage_folder", { folderType: "midi" })}
+              onClick={async () => {
+                if (result?.midi_path) {
+                  try {
+                    await invoke("open_path", { path: result.midi_path });
+                    return;
+                  } catch (e) {
+                    console.debug(e);
+                  }
+                }
+                if (selectedFilePath) {
+                  try {
+                    await invoke("open_path", { path: selectedFilePath });
+                    return;
+                  } catch (e) {
+                    console.debug(e);
+                  }
+                }
+                try {
+                  await invoke("open_storage_folder", { folderType: "stems" });
+                } catch (e) {
+                  console.debug(e);
+                }
+              }}
               className="gap-1.5 cursor-pointer"
-              title="Open folder where converted MIDI files are stored"
+              title="Open folder where audio and MIDI files are stored"
             >
-              <FolderOpen className="h-4 w-4" /> Open MIDI Folder
+              <FolderOpen className="h-4 w-4" /> Open Folder
             </Button>
           </div>
 
@@ -411,14 +478,37 @@ export function MidiExtractor({
             <h3 className="text-sm font-medium flex items-center gap-2">
               <Piano className="w-4 h-4" /> Converted MIDI Files ({existingMidis.length})
             </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => invoke("open_storage_folder", { folderType: "midi" })}
-              className="text-xs gap-1.5"
-            >
-              <FolderOpen className="w-3.5 h-3.5" /> Open MIDI Folder
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (existingMidis.length > 0 && existingMidis[0].path) {
+                    invoke("open_path", { path: existingMidis[0].path });
+                  } else {
+                    invoke("open_storage_folder", { folderType: "stems" });
+                  }
+                }}
+                className="text-xs gap-1.5"
+              >
+                <FolderOpen className="w-3.5 h-3.5" /> Open Folder
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAllMidis}
+                disabled={isDeletingAll || deletingPath !== null}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
+                title="Delete all converted MIDI files from history"
+              >
+                {isDeletingAll ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                Clear All
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -468,6 +558,20 @@ export function MidiExtractor({
                       className="text-xs gap-1"
                     >
                       <FolderOpen className="w-3.5 h-3.5" /> Show
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteMidi(item.path, item.name)}
+                      disabled={deletingPath === item.path || isDeletingAll}
+                      className="text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Delete MIDI file"
+                    >
+                      {deletingPath === item.path ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </Button>
                   </div>
                 </div>
