@@ -12,6 +12,7 @@ pub struct MidiConversionResponse {
     pub note_count: Option<usize>,
     pub duration: Option<f64>,
     pub duration_sec: Option<f64>,
+    pub detected_key: Option<String>,
     pub file_size: Option<u64>,
     pub message: Option<String>,
     pub error: Option<String>,
@@ -30,6 +31,7 @@ struct PythonMidiOutput {
     midi_path: Option<String>,
     note_count: Option<usize>,
     duration: Option<f64>,
+    detected_key: Option<String>,
     file_size: Option<u64>,
     message: Option<String>,
     fallback_reason: Option<String>,
@@ -121,6 +123,7 @@ pub async fn convert_audio_to_midi(
     file_path: String,
     output_path: Option<String>,
     engine: Option<String>,
+    preset: Option<String>,
 ) -> Result<MidiConversionResponse, String> {
     log::info!("Starting convert_audio_to_midi for: {}", file_path);
     let path = PathBuf::from(&file_path);
@@ -176,6 +179,7 @@ pub async fn convert_audio_to_midi(
     let script_path_clone = script_path.clone();
     let target_out_arg = target_out_str.clone();
     let engine_arg = engine.unwrap_or_else(|| "basic-pitch".to_string());
+    let preset_arg = preset.unwrap_or_else(|| "general".to_string());
 
     let output = tauri::async_runtime::spawn_blocking(move || {
         // Ensure dependencies exist in background thread
@@ -195,7 +199,8 @@ pub async fn convert_audio_to_midi(
             .arg(&script_path_clone)
             .arg(&file_path_clone)
             .arg(&target_out_arg)
-            .arg(&engine_arg);
+            .arg(&engine_arg)
+            .arg(&preset_arg);
 
         cmd.stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -228,6 +233,7 @@ pub async fn convert_audio_to_midi(
                         note_count: parsed.note_count,
                         duration: parsed.duration,
                         duration_sec: parsed.duration,
+                        detected_key: parsed.detected_key,
                         file_size: parsed.file_size,
                         message: parsed.fallback_reason,
                         error: None,

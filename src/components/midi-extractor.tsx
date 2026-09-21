@@ -23,9 +23,11 @@ import {
   Play,
   X,
   Trash2,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlayer } from "@/contexts/PlayerContext";
+import { MidiVisualizer, MidiVisualizerDialog } from "@/components/midi-visualizer";
 
 interface MidiExtractorProps {
   initialFile?: string;
@@ -40,6 +42,7 @@ interface ConversionResult {
   duration?: number;
   engine?: string;
   file_size?: number;
+  detected_key?: string;
 }
 
 interface ExistingMidiFile {
@@ -60,16 +63,27 @@ export function MidiExtractor({
   const [existingMidis, setExistingMidis] = useState<ExistingMidiFile[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState("basic-pitch");
-  const [selectedPreset, setSelectedPreset] = useState("general");
+  const [selectedPreset, setSelectedPreset] = useState("piano");
   const [copied, setCopied] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [viewingMidi, setViewingMidi] = useState<{ path: string; name: string } | null>(null);
+  const [showResultVisualizer, setShowResultVisualizer] = useState(true);
 
   useEffect(() => {
     if (initialFile) {
       setSelectedFilePath(initialFile);
     }
   }, [initialFile]);
+
+  useEffect(() => {
+    if (selectedFilePath) {
+      const lower = selectedFilePath.toLowerCase();
+      if (lower.includes("piano")) setSelectedPreset("piano");
+      else if (lower.includes("bass")) setSelectedPreset("bass");
+      else if (lower.includes("vocal")) setSelectedPreset("vocal");
+    }
+  }, [selectedFilePath]);
 
   // Load storage files to populate existing MIDI files
   const loadStorageFiles = async () => {
@@ -175,12 +189,14 @@ export function MidiExtractor({
         noteCount?: number;
         duration_sec?: number;
         duration?: number;
+        detected_key?: string;
         engine?: string;
         error?: string;
         message?: string;
       }>("convert_audio_to_midi", {
         filePath: selectedFilePath,
         engine: selectedEngine,
+        preset: selectedPreset,
       });
 
       const midiPath = res.midi_path || res.midiPath;
@@ -193,6 +209,7 @@ export function MidiExtractor({
           midi_path: midiPath,
           note_count: noteCount,
           duration: res.duration_sec ?? res.duration,
+          detected_key: res.detected_key,
           engine: res.engine || "Spotify Basic Pitch",
         };
         setResult(conversionRes);
@@ -347,6 +364,7 @@ export function MidiExtractor({
                   <SelectValue placeholder="Mode" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="piano">🎹 Piano Solo (Noise & Overtone Purged)</SelectItem>
                   <SelectItem value="general">Polyphonic (Full Mix / Chords)</SelectItem>
                   <SelectItem value="bass">Bass & 808s Focus</SelectItem>
                   <SelectItem value="vocal">Vocal & Lead Melody</SelectItem>
@@ -409,12 +427,17 @@ export function MidiExtractor({
           {result && (
             <div className="p-4 rounded-lg border bg-muted/40 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                   <span className="font-semibold text-sm">Conversion Complete</span>
                   <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                     {result.note_count} Notes Detected
                   </Badge>
+                  {result.detected_key && (
+                    <Badge variant="secondary" className="text-xs bg-amber-500/15 text-amber-400 border-amber-500/30">
+                      Key: {result.detected_key}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedFilePath && (
@@ -433,6 +456,30 @@ export function MidiExtractor({
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => setShowResultVisualizer((prev) => !prev)}
+                    className="text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                    title="Toggle embedded Piano Roll viewer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    {showResultVisualizer ? "Hide Piano Roll" : "View Piano Roll"}
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() =>
+                      setViewingMidi({
+                        path: result.midi_path,
+                        name: result.midi_path.split(/[/\\]/).pop() || "Converted MIDI",
+                      })
+                    }
+                    className="text-xs gap-1.5"
+                    title="Open full interactive Piano Roll modal"
+                  >
+                    <Piano className="w-3.5 h-3.5" /> Pop-out Viewer
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleCopyPath(result.midi_path)}
                     className="text-xs gap-1.5"
                   >
@@ -440,12 +487,12 @@ export function MidiExtractor({
                     {copied ? "Copied" : "Copy Path"}
                   </Button>
                   <Button
-                    variant="default"
+                    variant="outline"
                     size="sm"
                     onClick={() => invoke("open_path", { path: result.midi_path })}
                     className="text-xs gap-1.5"
                   >
-                    <FolderOpen className="w-3.5 h-3.5" /> Show in File Explorer
+                    <FolderOpen className="w-3.5 h-3.5" /> Show in Explorer
                   </Button>
                 </div>
               </div>
@@ -455,6 +502,18 @@ export function MidiExtractor({
               >
                 {result.midi_path}
               </div>
+
+              {/* Embedded Interactive Piano Roll Visualizer */}
+              {showResultVisualizer && (
+                <div className="pt-2 animate-in fade-in duration-200">
+                  <MidiVisualizer
+                    filePath={result.midi_path}
+                    fileName={result.midi_path.split(/[/\\]/).pop()}
+                    embedded={true}
+                    className="border-primary/20"
+                  />
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -543,6 +602,15 @@ export function MidiExtractor({
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setViewingMidi({ path: item.path, name: item.name })}
+                      className="text-xs gap-1.5 bg-primary/90 hover:bg-primary text-primary-foreground font-medium"
+                      title="Open interactive Piano Roll and play MIDI"
+                    >
+                      <Piano className="w-3.5 h-3.5" /> View Notes
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCopyPath(item.path)}
@@ -579,6 +647,16 @@ export function MidiExtractor({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Pop-up Dialog for Viewing MIDI Piano Roll */}
+      {viewingMidi && (
+        <MidiVisualizerDialog
+          open={Boolean(viewingMidi)}
+          onOpenChange={(open) => !open && setViewingMidi(null)}
+          filePath={viewingMidi.path}
+          fileName={viewingMidi.name}
+        />
       )}
     </div>
   );

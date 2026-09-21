@@ -37,6 +37,7 @@ import {
 import { toast } from "sonner";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
+import { MidiVisualizerDialog } from "@/components/midi-visualizer";
 
 export interface StorageFileItem {
   name: string;
@@ -92,6 +93,7 @@ export function LibraryDashboard({
   const [downloadMeta, setDownloadMeta] = useState<Record<string, SavedDownloadMetadata>>({});
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [midiLoading, setMidiLoading] = useState<Record<string, boolean>>({});
+  const [viewingMidi, setViewingMidi] = useState<{ path: string; name: string } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
@@ -264,6 +266,9 @@ export function LibraryDashboard({
     });
 
     try {
+      const lower = fileName.toLowerCase();
+      const preset = lower.includes("bass") ? "bass" : lower.includes("vocal") ? "vocal" : "piano";
+
       const res = await invoke<{
         success?: boolean;
         status?: string;
@@ -272,10 +277,15 @@ export function LibraryDashboard({
         note_count?: number;
         noteCount?: number;
         duration_sec?: number;
+        detected_key?: string;
         engine?: string;
         error?: string;
         message?: string;
-      }>("convert_audio_to_midi", { filePath });
+      }>("convert_audio_to_midi", {
+        filePath,
+        engine: "basic-pitch",
+        preset,
+      });
 
       const midiPath = res.midi_path || res.midiPath;
       const isSuccess = res.success === true || res.status === "success";
@@ -307,6 +317,12 @@ export function LibraryDashboard({
 
   // Handle Play Single
   const handlePlaySingle = (file: StorageFileItem) => {
+    // Intercept MIDI files to open Piano Roll viewer & synthesizer
+    if (file.category === "midi" || file.extension === "mid" || file.extension === "midi") {
+      setViewingMidi({ path: file.path, name: file.name });
+      return;
+    }
+
     const isCurrent = player.tracks.length === 1 && player.tracks[0]?.path === file.path;
     if (isCurrent) {
       player.togglePlayPause();
@@ -816,6 +832,7 @@ export function LibraryDashboard({
         <div className="grid grid-cols-1 gap-2.5">
           {paginatedFiles.map((file) => {
             const isVideo = ["mp4", "mkv", "webm", "mov"].includes(file.extension);
+            const isMidi = file.category === "midi" || file.extension === "mid" || file.extension === "midi";
             const isStem = file.category === "stem";
             const baseName = file.name.replace(/\.[^/.]+$/, "");
             const meta =
@@ -852,13 +869,17 @@ export function LibraryDashboard({
                     <div
                       className={`h-11 w-11 rounded-lg flex items-center justify-center shrink-0 border ${isVideo
                         ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                        : isStem
-                          ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
-                          : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        : isMidi
+                          ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          : isStem
+                            ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
+                            : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                         }`}
                     >
                       {isVideo ? (
                         <Video className="h-5 w-5" />
+                      ) : isMidi ? (
+                        <Piano className="h-5 w-5" />
                       ) : isStem ? (
                         <Sliders className="h-5 w-5" />
                       ) : (
@@ -892,30 +913,42 @@ export function LibraryDashboard({
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                  {/* Play Button */}
-                  <Button
-                    variant={isCurrent ? "secondary" : "default"}
-                    size="sm"
-                    onClick={() => handlePlaySingle(file)}
-                    className="h-8 gap-1.5 font-semibold"
-                  >
-                    {isCurrent && player.isPlaying ? (
-                      <>
-                        <Pause className="h-3.5 w-3.5 fill-current text-primary" /> Pause
-                      </>
-                    ) : isCurrent ? (
-                      <>
-                        <Play className="h-3.5 w-3.5 fill-current text-primary" /> Resume
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-3.5 w-3.5 fill-current" /> Play
-                      </>
-                    )}
-                  </Button>
+                  {/* Play / View Button */}
+                  {isMidi ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setViewingMidi({ path: file.path, name: file.name })}
+                      className="h-8 gap-1.5 font-semibold bg-amber-500 hover:bg-amber-600 text-slate-950"
+                      title="Open interactive Piano Roll and play MIDI notes"
+                    >
+                      <Piano className="h-3.5 w-3.5" /> View Notes
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={isCurrent ? "secondary" : "default"}
+                      size="sm"
+                      onClick={() => handlePlaySingle(file)}
+                      className="h-8 gap-1.5 font-semibold"
+                    >
+                      {isCurrent && player.isPlaying ? (
+                        <>
+                          <Pause className="h-3.5 w-3.5 fill-current text-primary" /> Pause
+                        </>
+                      ) : isCurrent ? (
+                        <>
+                          <Play className="h-3.5 w-3.5 fill-current text-primary" /> Resume
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3.5 w-3.5 fill-current" /> Play
+                        </>
+                      )}
+                    </Button>
+                  )}
 
                   {/* Send to STEM Extractor (for audio files) */}
-                  {!isStem && onSendToExtractor && (
+                  {!isStem && !isMidi && onSendToExtractor && (
                     <Button
                       variant="secondary"
                       size="sm"
@@ -928,7 +961,7 @@ export function LibraryDashboard({
                   )}
 
                   {/* Convert to MIDI (for audio files & stems) */}
-                  {!isVideo && (
+                  {!isVideo && !isMidi && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -1000,6 +1033,16 @@ export function LibraryDashboard({
             Next <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
+      )}
+
+      {/* Pop-up Dialog for Viewing MIDI Piano Roll */}
+      {viewingMidi && (
+        <MidiVisualizerDialog
+          open={Boolean(viewingMidi)}
+          onOpenChange={(open) => !open && setViewingMidi(null)}
+          filePath={viewingMidi.path}
+          fileName={viewingMidi.name}
+        />
       )}
     </div>
   );
