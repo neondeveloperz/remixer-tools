@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ interface ConversionResult {
   engine?: string;
   file_size?: number;
   detected_key?: string;
+  bpm?: number;
 }
 
 interface ExistingMidiFile {
@@ -63,12 +64,39 @@ export function MidiExtractor({
   const [existingMidis, setExistingMidis] = useState<ExistingMidiFile[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState("basic-pitch");
-  const [selectedPreset, setSelectedPreset] = useState("piano");
+  const [selectedPreset, setSelectedPreset] = useState("general");
+  const [selectedSensitivity, setSelectedSensitivity] = useState("balanced");
+  const [bpmMode, setBpmMode] = useState<"auto" | "manual">("auto");
+  const [manualBpm, setManualBpm] = useState<string>("");
+  const tapTimesRef = useRef<number[]>([]);
+  const [quantizeGrid, setQuantizeGrid] = useState<string>("adaptive");
+  const [quantizeStrength, setQuantizeStrength] = useState<number>(0.85);
   const [copied, setCopied] = useState(false);
   const [deletingPath, setDeletingPath] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [viewingMidi, setViewingMidi] = useState<{ path: string; name: string } | null>(null);
   const [showResultVisualizer, setShowResultVisualizer] = useState(true);
+
+  const handleTapTempo = () => {
+    const now = Date.now();
+    const valid = tapTimesRef.current.filter((t) => now - t < 2500);
+    const updated = [...valid, now].slice(-6);
+    tapTimesRef.current = updated;
+
+    if (updated.length >= 2) {
+      const intervals: number[] = [];
+      for (let i = 1; i < updated.length; i++) {
+        intervals.push(updated[i] - updated[i - 1]);
+      }
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const calculatedBpm = Math.round(60000 / avgInterval);
+      if (calculatedBpm >= 40 && calculatedBpm <= 260) {
+        setManualBpm(calculatedBpm.toString());
+        setBpmMode("manual");
+        toast.info(`Tap Tempo: ${calculatedBpm} BPM`, { duration: 1500 });
+      }
+    }
+  };
 
   useEffect(() => {
     if (initialFile) {
@@ -79,9 +107,10 @@ export function MidiExtractor({
   useEffect(() => {
     if (selectedFilePath) {
       const lower = selectedFilePath.toLowerCase();
-      if (lower.includes("piano")) setSelectedPreset("piano");
-      else if (lower.includes("bass")) setSelectedPreset("bass");
-      else if (lower.includes("vocal")) setSelectedPreset("vocal");
+      if (lower.includes("vocal") || lower.includes("lead")) setSelectedPreset("vocal");
+      else if (lower.includes("bass") || lower.includes("808")) setSelectedPreset("bass");
+      else if (lower.includes("piano") || lower.includes("keys")) setSelectedPreset("piano");
+      else setSelectedPreset("general");
     }
   }, [selectedFilePath]);
 
@@ -180,6 +209,7 @@ export function MidiExtractor({
     });
 
     try {
+      const bpmNum = bpmMode === "manual" && manualBpm ? parseFloat(manualBpm) : undefined;
       const res = await invoke<{
         success?: boolean;
         status?: string;
@@ -189,6 +219,9 @@ export function MidiExtractor({
         noteCount?: number;
         duration_sec?: number;
         duration?: number;
+        bpm?: number;
+        first_beat?: number;
+        quantize_grid?: string;
         detected_key?: string;
         engine?: string;
         error?: string;
@@ -197,6 +230,10 @@ export function MidiExtractor({
         filePath: selectedFilePath,
         engine: selectedEngine,
         preset: selectedPreset,
+        sensitivity: selectedSensitivity,
+        bpm: bpmNum && !isNaN(bpmNum) ? bpmNum : undefined,
+        quantizeGrid: quantizeGrid,
+        quantizeStrength: quantizeStrength,
       });
 
       const midiPath = res.midi_path || res.midiPath;
@@ -209,6 +246,7 @@ export function MidiExtractor({
           midi_path: midiPath,
           note_count: noteCount,
           duration: res.duration_sec ?? res.duration,
+          bpm: res.bpm,
           detected_key: res.detected_key,
           engine: res.engine || "Spotify Basic Pitch",
         };
@@ -327,7 +365,7 @@ export function MidiExtractor({
           </div>
 
           {/* Options Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>AI Engine</Label>
               <Select
@@ -342,17 +380,17 @@ export function MidiExtractor({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="basic-pitch">
-                    Spotify Basic Pitch (Multi-Pitch Neural Net)
+                    Spotify Basic Pitch (Multi-Pitch)
                   </SelectItem>
                   <SelectItem value="onset">
-                    Onset-to-MIDI (Pitch Estimation & Monophonic)
+                    Onset-to-MIDI (Monophonic Lead)
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Transcription Mode</Label>
+              <Label>Frequency Preset</Label>
               <Select
                 value={selectedPreset}
                 onValueChange={(val) => {
@@ -361,16 +399,171 @@ export function MidiExtractor({
                 disabled={isConverting}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Mode" />
+                  <SelectValue placeholder="Preset" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="piano">🎹 Piano Solo (Noise & Overtone Purged)</SelectItem>
-                  <SelectItem value="general">Polyphonic (Full Mix / Chords)</SelectItem>
-                  <SelectItem value="bass">Bass & 808s Focus</SelectItem>
-                  <SelectItem value="vocal">Vocal & Lead Melody</SelectItem>
-                  <SelectItem value="fast">Fast Arpeggios / Stabs</SelectItem>
+                  <SelectItem value="general">Full Spectrum (C1 – B7 / 88 Keys)</SelectItem>
+                  <SelectItem value="vocal">Vocal / Lead (Full C1 – B7 Dynamics)</SelectItem>
+                  <SelectItem value="piano">🎹 Piano Solo (A0 – C8 Full Acoustic)</SelectItem>
+                  <SelectItem value="bass">Bass & 808s (Sub-bass to Harmonics)</SelectItem>
+                  <SelectItem value="fast">Fast Arpeggios / Staccato</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Detection Sensitivity</Label>
+              <Select
+                value={selectedSensitivity}
+                onValueChange={(val) => {
+                  if (val) setSelectedSensitivity(val);
+                }}
+                disabled={isConverting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sensitivity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">
+                    High (เก็บละเอียด / ท่อนเบาไม่หลุด)
+                  </SelectItem>
+                  <SelectItem value="balanced">
+                    Balanced (สมดุล แนะนำ)
+                  </SelectItem>
+                  <SelectItem value="clean">
+                    Clean / Strict (เน้นโน้ตหลัก คัด Noise)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Rhythm & Tempo Precision Controls */}
+          <div className="p-3.5 rounded-lg border bg-muted/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wide uppercase text-muted-foreground flex items-center gap-1.5">
+                <span>⏱️</span>
+                <span>Rhythm Precision & Beat Grid (ความแม่นยำจังหวะ & Quantize)</span>
+              </span>
+              <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+                HPSS Transient Sync
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* BPM Mode & Tap Tempo */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">BPM / Tempo</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (bpmMode === "auto") setBpmMode("manual");
+                      else {
+                        setBpmMode("auto");
+                        setManualBpm("");
+                      }
+                    }}
+                    className="text-[11px] text-primary hover:underline cursor-pointer"
+                  >
+                    {bpmMode === "auto" ? "✏️ ระบุเอง / Tap" : "🔄 Auto Detect"}
+                  </button>
+                </div>
+                {bpmMode === "auto" ? (
+                  <div className="h-9 px-3 rounded-md border border-dashed flex items-center justify-between text-xs text-muted-foreground bg-background/50">
+                    <span>Auto (Transient Sync)</span>
+                    <span className="text-[10px] text-primary font-mono font-medium">Auto</span>
+                  </div>
+                ) : (
+                  <div className="flex gap-1.5">
+                    <Input
+                      type="number"
+                      placeholder="e.g. 128"
+                      value={manualBpm}
+                      onChange={(e) => setManualBpm(e.target.value)}
+                      className="h-9 text-xs font-mono"
+                      min={40}
+                      max={260}
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleTapTempo}
+                      className="h-9 px-3 text-xs font-semibold shrink-0 cursor-pointer active:scale-95 transition-transform"
+                      title="เคาะตามจังหวะเพลง 3-4 ครั้งเพื่อหา BPM อัตโนมัติ"
+                    >
+                      TAP
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Musical Beat Grid */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Beat Grid Snapping</Label>
+                <Select
+                  value={quantizeGrid}
+                  onValueChange={(val) => {
+                    if (val) setQuantizeGrid(val);
+                  }}
+                  disabled={isConverting}
+                >
+                  <SelectTrigger className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Grid" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adaptive" className="text-xs cursor-pointer">
+                      Adaptive (1/16 & Triplet Smart Snap)
+                    </SelectItem>
+                    <SelectItem value="1/16" className="text-xs cursor-pointer">
+                      1/16 Beat (Straight Groove / Pop / EDM)
+                    </SelectItem>
+                    <SelectItem value="1/8" className="text-xs cursor-pointer">
+                      1/8 Beat (Ballads / Slow Acoustic)
+                    </SelectItem>
+                    <SelectItem value="1/12" className="text-xs cursor-pointer">
+                      1/12 Beat (Triplets / Swing / Trap)
+                    </SelectItem>
+                    <SelectItem value="1/32" className="text-xs cursor-pointer">
+                      1/32 Beat (Fast Arpeggios)
+                    </SelectItem>
+                    <SelectItem value="off" className="text-xs cursor-pointer">
+                      Off (Raw Human Performance)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Quantize Strength */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Quantize Strength</Label>
+                <Select
+                  value={quantizeStrength.toString()}
+                  onValueChange={(val) => {
+                    if (val) setQuantizeStrength(parseFloat(val));
+                  }}
+                  disabled={isConverting || quantizeGrid === "off"}
+                >
+                  <SelectTrigger className="w-full h-9 text-xs">
+                    <SelectValue placeholder="Strength" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1" className="text-xs cursor-pointer">
+                      100% (Hard Snap - Perfect DAW Grid)
+                    </SelectItem>
+                    <SelectItem value="0.85" className="text-xs cursor-pointer">
+                      85% (Natural Snap - แนะนำ)
+                    </SelectItem>
+                    <SelectItem value="0.5" className="text-xs cursor-pointer">
+                      50% (Subtle Tightening)
+                    </SelectItem>
+                    <SelectItem value="0" className="text-xs cursor-pointer">
+                      0% (Raw Timing)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -433,6 +626,11 @@ export function MidiExtractor({
                   <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
                     {result.note_count} Notes Detected
                   </Badge>
+                  {result.bpm && (
+                    <Badge variant="secondary" className="text-xs bg-sky-500/15 text-sky-400 border-sky-500/30">
+                      {result.bpm} BPM
+                    </Badge>
+                  )}
                   {result.detected_key && (
                     <Badge variant="secondary" className="text-xs bg-amber-500/15 text-amber-400 border-amber-500/30">
                       Key: {result.detected_key}

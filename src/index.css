@@ -183,4 +183,23 @@ body {
   .ui-selectable {
     @apply select-text;
   }
+
+  /* Piano Roll custom visible scrollbars */
+  .piano-roll-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .piano-roll-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .piano-roll-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.8);
+    border-radius: 6px;
+    border: 2px solid rgba(15, 23, 42, 0.95);
+  }
+  .piano-roll-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.95);
+  }
 }
+

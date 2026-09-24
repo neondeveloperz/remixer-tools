@@ -12,6 +12,9 @@ pub struct MidiConversionResponse {
     pub note_count: Option<usize>,
     pub duration: Option<f64>,
     pub duration_sec: Option<f64>,
+    pub bpm: Option<f64>,
+    pub first_beat: Option<f64>,
+    pub quantize_grid: Option<String>,
     pub detected_key: Option<String>,
     pub file_size: Option<u64>,
     pub message: Option<String>,
@@ -31,6 +34,9 @@ struct PythonMidiOutput {
     midi_path: Option<String>,
     note_count: Option<usize>,
     duration: Option<f64>,
+    bpm: Option<f64>,
+    first_beat: Option<f64>,
+    quantize_grid: Option<String>,
     detected_key: Option<String>,
     file_size: Option<u64>,
     message: Option<String>,
@@ -124,6 +130,10 @@ pub async fn convert_audio_to_midi(
     output_path: Option<String>,
     engine: Option<String>,
     preset: Option<String>,
+    bpm: Option<f64>,
+    sensitivity: Option<String>,
+    quantize_grid: Option<String>,
+    quantize_strength: Option<f64>,
 ) -> Result<MidiConversionResponse, String> {
     log::info!("Starting convert_audio_to_midi for: {}", file_path);
     let path = PathBuf::from(&file_path);
@@ -180,6 +190,10 @@ pub async fn convert_audio_to_midi(
     let target_out_arg = target_out_str.clone();
     let engine_arg = engine.unwrap_or_else(|| "basic-pitch".to_string());
     let preset_arg = preset.unwrap_or_else(|| "general".to_string());
+    let bpm_arg = bpm;
+    let sensitivity_arg = sensitivity.unwrap_or_else(|| "balanced".to_string());
+    let quantize_grid_arg = quantize_grid.unwrap_or_else(|| "adaptive".to_string());
+    let quantize_strength_arg = quantize_strength.unwrap_or(0.85);
 
     let output = tauri::async_runtime::spawn_blocking(move || {
         // Ensure dependencies exist in background thread
@@ -201,6 +215,16 @@ pub async fn convert_audio_to_midi(
             .arg(&target_out_arg)
             .arg(&engine_arg)
             .arg(&preset_arg);
+
+        if let Some(b) = bpm_arg {
+            cmd.arg(b.to_string());
+        } else {
+            cmd.arg("");
+        }
+
+        cmd.arg(&sensitivity_arg)
+            .arg(&quantize_grid_arg)
+            .arg(quantize_strength_arg.to_string());
 
         cmd.stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -233,6 +257,9 @@ pub async fn convert_audio_to_midi(
                         note_count: parsed.note_count,
                         duration: parsed.duration,
                         duration_sec: parsed.duration,
+                        bpm: parsed.bpm,
+                        first_beat: parsed.first_beat,
+                        quantize_grid: parsed.quantize_grid,
                         detected_key: parsed.detected_key,
                         file_size: parsed.file_size,
                         message: parsed.fallback_reason,
