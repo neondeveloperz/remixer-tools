@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FolderOpenIcon, RefreshCwIcon, Sun, Moon } from "lucide-react";
+import { FolderOpenIcon, RefreshCwIcon, Sun, Moon, RotateCcw } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTheme } from "@/components/theme-provider";
+import { toast } from "sonner";
 
 export function Settings() {
   const { theme, setTheme } = useTheme();
@@ -16,6 +17,7 @@ export function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string>("");
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isRepairingStem, setIsRepairingStem] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -93,6 +95,19 @@ export function Settings() {
     }
   };
 
+  const repairStemEnvironment = async () => {
+    try {
+      setIsRepairingStem(true);
+      toast.info("Repairing STEM Extractor environment... This might take a few minutes.");
+      await invoke("reset_stem_extractor");
+      toast.success("STEM Extractor environment reinstalled successfully!");
+    } catch (e) {
+      toast.error(`Failed to repair STEM environment: ${e}`);
+    } finally {
+      setIsRepairingStem(false);
+    }
+  };
+
   return (
     <Card className="w-full mx-auto">
       <CardHeader>
@@ -150,15 +165,28 @@ export function Settings() {
                   {downloadDir ? `${downloadDir}/stems` : "~/downloads/remixer-tools/stems"}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs shrink-0"
-                onClick={() => invoke("open_storage_folder", { folderType: "extractor" })}
-              >
-                <FolderOpenIcon className="h-3.5 w-3.5 mr-1" />
-                Open
-              </Button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={isRepairingStem}
+                  onClick={repairStemEnvironment}
+                  title="Reinstall STEM Extractor Python environment and dependencies"
+                >
+                  <RotateCcw className={`h-3 w-3 mr-1 ${isRepairingStem ? "animate-spin" : ""}`} />
+                  {isRepairingStem ? "Repairing..." : "Repair"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => invoke("open_storage_folder", { folderType: "extractor" })}
+                >
+                  <FolderOpenIcon className="h-3.5 w-3.5 mr-1" />
+                  Open
+                </Button>
+              </div>
             </div>
           </div>
         </div>

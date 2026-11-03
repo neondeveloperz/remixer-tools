@@ -109,6 +109,7 @@ pub async fn analyze_and_rename_audio(
     let file_path_clone = file_path.clone();
     let script_path_clone = script_path.clone();
 
+    let file_path_cmd = file_path.clone();
     let output = tauri::async_runtime::spawn_blocking(move || {
         let mut cmd = std::process::Command::new(&python_path);
         
@@ -208,6 +209,6 @@ pub async fn analyze_and_rename_audio(
         new_path: Some(final_path.to_string_lossy().to_string()),
         bpm: Some(bpm),
         key: Some(key),
-        message: None,
+        message: rename_msg,
     })
 }

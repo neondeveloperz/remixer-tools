@@ -26,6 +26,17 @@ use crate::ai_models::get_models_dir;
 use crate::downloader::{CommandExtForWindows, download_file_with_progress};
 
 #[tauri::command]
+pub async fn reset_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
+    cancel_stem_extractor();
+    let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let venv_dir = app_dir.join("venv");
+    if venv_dir.exists() {
+        let _ = std::fs::remove_dir_all(&venv_dir);
+    }
+    setup_stem_extractor(app).await
+}
+
+#[tauri::command]
 pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
     let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     let venv_dir = app_dir.join("venv");
@@ -43,21 +54,31 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         python_dir.join("python").join("bin").join("python3")
     };
 
-    // Auto download standalone python if not exists
-    if !python_dir.exists() {
+    let venv_python = if cfg!(target_os = "windows") {
+        venv_dir.join("Scripts").join("python.exe")
+    } else {
+        venv_dir.join("bin").join("python")
+    };
+
+    // Auto download standalone python if not exists or corrupted
+    if !python_exe_path.exists() {
+        if python_dir.exists() {
+            let _ = std::fs::remove_dir_all(&python_dir);
+        }
+
         app.emit(
             "stem-log",
             "Downloading standalone Python environment (approx 35MB)...",
         )
         .unwrap();
         let python_url = if cfg!(target_os = "windows") {
-            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-pc-windows-msvc-shared-install_only.tar.gz"
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-pc-windows-msvc-shared-install_only.tar.gz"
         } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-aarch64-apple-darwin-install_only.tar.gz"
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-aarch64-apple-darwin-install_only.tar.gz"
         } else if cfg!(target_os = "macos") {
-            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-apple-darwin-install_only.tar.gz"
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-apple-darwin-install_only.tar.gz"
         } else {
-            "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-unknown-linux-gnu-install_only.tar.gz"
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-unknown-linux-gnu-install_only.tar.gz"
         };
 
         let bytes = download_file_with_progress(&app, python_url, "python").await?;
@@ -79,7 +100,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             .status()
             .map_err(|e| format!("Failed to run tar command: {}", e))?;
 
-        if !tar_status.success() {
+        if !tar_status.success() || !python_exe_path.exists() {
             return Err("Failed to extract standalone Python.".to_string());
         }
 
@@ -96,7 +117,11 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         )
         .unwrap();
 
-        if !venv_dir.exists() {
+        if !venv_dir.exists() || !venv_python.exists() {
+            if venv_dir.exists() {
+                let _ = std::fs::remove_dir_all(&venv_dir);
+            }
+
             let status = std::process::Command::new(&python_exe_path)
                 .hide_window()
                 .arg("-m")
@@ -105,7 +130,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 .status()
                 .map_err(|e| e.to_string())?;
 
-            if !status.success() {
+            if !status.success() || !venv_python.exists() {
                 return Err(
                     "Failed to create Python virtual environment with standalone Python."
                         .to_string(),
@@ -113,111 +138,185 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             }
         }
 
+        // Ensure pip is available inside the venv
+        let _ = std::process::Command::new(&venv_python)
+            .hide_window()
+            .arg("-m")
+            .arg("ensurepip")
+            .arg("--default-pip")
+            .status();
+
         app.emit(
             "stem-log",
             "Installing audio-separator... This will download AI libraries (approx 2GB).",
         )
         .unwrap();
 
-        let pip_path = if cfg!(target_os = "windows") {
-            venv_dir.join("Scripts").join("pip.exe")
-        } else {
-            venv_dir.join("bin").join("pip")
-        };
-
         // 1. Uninstall CPU version of onnxruntime if it exists to prevent conflicts
-        let mut cmd_rm = std::process::Command::new(&pip_path).hide_window();
-        cmd_rm.arg("uninstall").arg("-y").arg("onnxruntime");
+        let mut cmd_rm = std::process::Command::new(&venv_python).hide_window();
+        cmd_rm
+            .arg("-m")
+            .arg("pip")
+            .arg("uninstall")
+            .arg("-y")
+            .arg("onnxruntime");
         let _ = cmd_rm.status();
 
         // 2. Install PyTorch with or without CUDA
-        let mut cmd_torch = std::process::Command::new(&pip_path).hide_window();
+        let mut torch_installed = false;
         if cfg!(target_os = "windows") {
             app.emit("stem-log", "Installing PyTorch with CUDA (approx 2.5GB)...")
                 .unwrap();
+            let mut cmd_torch = std::process::Command::new(&venv_python).hide_window();
             cmd_torch
+                .arg("-m")
+                .arg("pip")
                 .arg("install")
                 .arg("torch")
                 .arg("torchvision")
                 .arg("torchaudio")
-                .arg("--index-url")
+                .arg("--extra-index-url")
                 .arg("https://download.pytorch.org/whl/cu124")
-                .arg("--prefer-binary")
-                .arg("--upgrade");
+                .arg("--prefer-binary");
+
+            if let Ok(mut child_torch) = cmd_torch.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
+                let stdout_torch = child_torch.stdout.take().unwrap();
+                let stderr_torch = child_torch.stderr.take().unwrap();
+
+                let app_torch = app.clone();
+                std::thread::spawn(move || {
+                    let reader = BufReader::new(stdout_torch);
+                    for line in reader.lines().flatten() {
+                        let _ = app_torch.emit("stem-log", line);
+                    }
+                });
+
+                let app_torch_err = app.clone();
+                std::thread::spawn(move || {
+                    let reader = BufReader::new(stderr_torch);
+                    for line in reader.lines().flatten() {
+                        let _ = app_torch_err.emit("stem-log", line);
+                    }
+                });
+
+                if let Ok(status) = child_torch.wait() {
+                    torch_installed = status.success();
+                }
+            }
+
+            if !torch_installed {
+                app.emit("stem-log", "CUDA PyTorch install failed or timed out. Falling back to standard PyTorch...")
+                    .unwrap();
+                let mut cmd_fallback = std::process::Command::new(&venv_python).hide_window();
+                cmd_fallback
+                    .arg("-m")
+                    .arg("pip")
+                    .arg("install")
+                    .arg("torch")
+                    .arg("torchvision")
+                    .arg("torchaudio")
+                    .arg("--prefer-binary");
+
+                if let Ok(mut child_fb) = cmd_fallback.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
+                    let stdout_fb = child_fb.stdout.take().unwrap();
+                    let stderr_fb = child_fb.stderr.take().unwrap();
+
+                    let app_fb = app.clone();
+                    std::thread::spawn(move || {
+                        let reader = BufReader::new(stdout_fb);
+                        for line in reader.lines().flatten() {
+                            let _ = app_fb.emit("stem-log", line);
+                        }
+                    });
+
+                    let app_fb_err = app.clone();
+                    std::thread::spawn(move || {
+                        let reader = BufReader::new(stderr_fb);
+                        for line in reader.lines().flatten() {
+                            let _ = app_fb_err.emit("stem-log", line);
+                        }
+                    });
+
+                    if let Ok(status) = child_fb.wait() {
+                        torch_installed = status.success();
+                    }
+                }
+            }
         } else {
             app.emit("stem-log", "Installing PyTorch (approx 1GB)...")
                 .unwrap();
+            let mut cmd_torch = std::process::Command::new(&venv_python).hide_window();
             cmd_torch
+                .arg("-m")
+                .arg("pip")
                 .arg("install")
                 .arg("torch")
                 .arg("torchvision")
                 .arg("torchaudio")
-                .arg("--prefer-binary")
-                .arg("--upgrade");
+                .arg("--prefer-binary");
+
+            if let Ok(mut child_torch) = cmd_torch.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn() {
+                let stdout_torch = child_torch.stdout.take().unwrap();
+                let stderr_torch = child_torch.stderr.take().unwrap();
+
+                let app_torch = app.clone();
+                std::thread::spawn(move || {
+                    let reader = BufReader::new(stdout_torch);
+                    for line in reader.lines().flatten() {
+                        let _ = app_torch.emit("stem-log", line);
+                    }
+                });
+
+                let app_torch_err = app.clone();
+                std::thread::spawn(move || {
+                    let reader = BufReader::new(stderr_torch);
+                    for line in reader.lines().flatten() {
+                        let _ = app_torch_err.emit("stem-log", line);
+                    }
+                });
+
+                if let Ok(status) = child_torch.wait() {
+                    torch_installed = status.success();
+                }
+            }
         }
 
-        let mut child_torch = cmd_torch
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| e.to_string())?;
-
-        let stdout_torch = child_torch.stdout.take().unwrap();
-        let stderr_torch = child_torch.stderr.take().unwrap();
-
-        let app_torch = app.clone();
-        std::thread::spawn(move || {
-            let reader = BufReader::new(stdout_torch);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = app_torch.emit("stem-log", line);
-                }
-            }
-        });
-
-        let app_torch_err = app.clone();
-        std::thread::spawn(move || {
-            let reader = BufReader::new(stderr_torch);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = app_torch_err.emit("stem-log", line);
-                }
-            }
-        });
-
-        let status_torch = child_torch.wait().map_err(|e| e.to_string())?;
-        if !status_torch.success() {
+        if !torch_installed {
             return Err("Failed to install PyTorch. Check the logs for details.".to_string());
         }
 
         // 3. Install audio-separator and onnxruntime
-        let mut cmd = std::process::Command::new(&pip_path).hide_window();
+        let mut cmd = std::process::Command::new(&venv_python).hide_window();
         if cfg!(target_os = "windows") {
             app.emit(
                 "stem-log",
                 "Installing audio-separator, librosa, and ONNX Runtime DirectML...",
             )
             .unwrap();
-            cmd.arg("install")
+            cmd.arg("-m")
+                .arg("pip")
+                .arg("install")
                 .arg("audio-separator")
                 .arg("audioread")
                 .arg("librosa")
                 .arg("soundfile")
                 .arg("onnxruntime-directml")
+                .arg("--extra-index-url")
+                .arg("https://download.pytorch.org/whl/cu124")
                 .arg("--prefer-binary")
-                .arg("--upgrade")
                 .arg("--no-warn-script-location");
         } else {
             app.emit("stem-log", "Installing audio-separator, librosa, and ONNX Runtime...")
                 .unwrap();
-            cmd.arg("install")
+            cmd.arg("-m")
+                .arg("pip")
+                .arg("install")
                 .arg("audio-separator")
                 .arg("audioread")
                 .arg("librosa")
                 .arg("soundfile")
                 .arg("onnxruntime")
                 .arg("--prefer-binary")
-                .arg("--upgrade")
                 .arg("--no-warn-script-location");
         }
 
@@ -233,20 +332,16 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         let app_clone = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = app_clone.emit("stem-log", line);
-                }
+            for line in reader.lines().flatten() {
+                let _ = app_clone.emit("stem-log", line);
             }
         });
 
         let app_clone_err = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    let _ = app_clone_err.emit("stem-log", line);
-                }
+            for line in reader.lines().flatten() {
+                let _ = app_clone_err.emit("stem-log", line);
             }
         });
 
@@ -254,13 +349,21 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         if !status.success() {
             return Err("Failed to install audio-separator.".to_string());
         }
+
+        // Ensure CPU onnxruntime is removed if pulled in transitively on Windows
+        #[cfg(target_os = "windows")]
+        {
+            let mut cmd_rm_final = std::process::Command::new(&venv_python).hide_window();
+            cmd_rm_final
+                .arg("-m")
+                .arg("pip")
+                .arg("uninstall")
+                .arg("-y")
+                .arg("onnxruntime");
+            let _ = cmd_rm_final.status();
+        }
     }
 
-    let venv_python = if cfg!(target_os = "windows") {
-        venv_dir.join("Scripts").join("python.exe")
-    } else {
-        venv_dir.join("bin").join("python")
-    };
     ensure_separator_dml_patch(&venv_python);
 
     app.emit("stem-log", "STEM Extractor is ready!").unwrap();

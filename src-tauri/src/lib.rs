@@ -87,6 +87,7 @@ pub fn run() {
             setup_dependencies,
             get_video_info,
             setup_stem_extractor,
+            reset_stem_extractor,
             run_stem_extractor,
             cancel_stem_extractor,
             get_installed_models,
