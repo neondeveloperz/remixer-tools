@@ -49,7 +49,7 @@ pub async fn analyze_and_rename_audio(
         });
     }
 
-    let app_dir = app.path().app_data_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let app_dir = app.path().app_local_data_dir().unwrap_or_else(|_| PathBuf::from("."));
     let venv_dir = app_dir.join("venv");
     
     let python_path = if cfg!(target_os = "windows") {
@@ -62,26 +62,12 @@ pub async fn analyze_and_rename_audio(
         return Err("Python environment not found. Please run setup in STEM Extractor first.".to_string());
     }
 
-    // Call analyzer.py
-    let analyzer_script = app
-        .path()
-        .resource_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("python")
-        .join("analyzer.py");
+    // Embed analyzer script directly to guarantee availability in all environments
+    const EMBEDDED_ANALYZER_SCRIPT: &str = include_str!("../python/analyzer.py");
+    let script_path = app_dir.join("analyzer.py");
+    let _ = std::fs::write(&script_path, EMBEDDED_ANALYZER_SCRIPT);
 
-    let script_path = if analyzer_script.exists() {
-        analyzer_script
-    } else {
-        let alt = PathBuf::from("python").join("analyzer.py");
-        let alt2 = PathBuf::from("../python").join("analyzer.py");
-        if alt.exists() { alt } else { alt2 }
-    };
-
-    if !script_path.exists() {
-        return Err(format!("Analyzer script not found at {:?}", script_path));
-    }
-
+    let file_path_cmd = file_path.clone();
     let output = tauri::async_runtime::spawn_blocking(move || {
         let mut cmd = std::process::Command::new(&python_path);
         
@@ -93,7 +79,7 @@ pub async fn analyze_and_rename_audio(
         }
 
         cmd.arg(&script_path)
-            .arg(&file_path)
+            .arg(&file_path_cmd)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()
@@ -128,19 +114,29 @@ pub async fn analyze_and_rename_audio(
     // Format key (e.g. "C Minor" -> "C_Minor")
     let key_formatted = key.replace(" ", "_");
     
-    // Rename file
-    let new_file_name = format!("{}_{}BPM_{}", file_name, bpm, key_formatted);
-    let new_path = path.with_file_name(format!("{}.{}", new_file_name, ext));
+    // Rename file if possible, or keep original path if file is locked
+    let new_file_name = if key_formatted.is_empty() {
+        format!("{}_{}BPM", file_name, bpm)
+    } else {
+        format!("{}_{}BPM_{}", file_name, bpm, key_formatted)
+    };
+
+    let new_path = if ext.is_empty() {
+        path.with_file_name(&new_file_name)
+    } else {
+        path.with_file_name(format!("{}.{}", new_file_name, ext))
+    };
     
-    if let Err(e) = fs::rename(&path, &new_path) {
-        return Err(format!("Failed to rename file: {}", e));
-    }
+    let (renamed_path, rename_msg) = match fs::rename(&path, &new_path) {
+        Ok(_) => (Some(new_path.to_string_lossy().to_string()), None),
+        Err(e) => (Some(file_path.clone()), Some(format!("Analysis succeeded but file could not be renamed: {}", e))),
+    };
 
     Ok(AnalyzeAndRenameResponse {
         success: true,
-        new_path: Some(new_path.to_string_lossy().to_string()),
+        new_path: renamed_path,
         bpm: Some(bpm),
         key: Some(key),
-        message: None,
+        message: rename_msg,
     })
 }

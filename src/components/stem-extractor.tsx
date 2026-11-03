@@ -23,6 +23,8 @@ import {
   Loader2,
   Store,
   Zap,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
@@ -354,6 +356,24 @@ export function StemExtractor({
     }
   };
 
+  const handleRetrySetup = () => {
+    setIsSettingUp(true);
+    setSetupLog([]);
+    invoke("setup_stem_extractor").catch(e => {
+      setSetupLog(prev => [...prev, `Error: ${e}`]);
+      setIsSettingUp(false);
+    });
+  };
+
+  const handleResetSetup = () => {
+    setIsSettingUp(true);
+    setSetupLog(["Reinstalling environment... Please wait."]);
+    invoke("reset_stem_extractor").catch(e => {
+      setSetupLog(prev => [...prev, `Error: ${e}`]);
+      setIsSettingUp(false);
+    });
+  };
+
   if (isSettingUp) {
     return (
       <Card className="w-full max-w-3xl mx-auto mt-10">
@@ -392,8 +412,20 @@ export function StemExtractor({
     return (
       <Card className="w-full max-w-3xl mx-auto mt-10 border-destructive">
         <CardHeader>
-          <CardTitle className="text-destructive">Setup Failed</CardTitle>
-          <CardDescription>Could not initialize the STEM Extractor environment.</CardDescription>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-destructive">Setup Failed</CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleRetrySetup} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Retry
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleResetSetup} className="gap-1.5">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reinstall Environment
+              </Button>
+            </div>
+          </div>
+          <CardDescription>Could not initialize the STEM Extractor environment. You can retry or reinstall the environment below.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap text-destructive">

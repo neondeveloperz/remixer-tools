@@ -1,23 +1,32 @@
 use tauri::{Manager, Emitter};
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::process::Stdio;
 
 use crate::models::*;
 use crate::downloader::CommandExtForWindows;
 
-pub fn get_models_dir(_app: &tauri::AppHandle) -> std::path::PathBuf {
+pub fn get_models_dir(app: &tauri::AppHandle) -> std::path::PathBuf {
     #[cfg(target_os = "windows")]
     {
         let dir = std::path::PathBuf::from(r"C:\tmp\audio-separator-models");
-        let _ = std::fs::create_dir_all(&dir);
-        dir
+        if std::fs::create_dir_all(&dir).is_ok() {
+            return dir;
+        }
     }
     #[cfg(not(target_os = "windows"))]
     {
         let dir = std::path::PathBuf::from("/tmp/audio-separator-models");
-        let _ = std::fs::create_dir_all(&dir);
-        dir
+        if std::fs::create_dir_all(&dir).is_ok() {
+            return dir;
+        }
     }
+    let fallback = app
+        .path()
+        .app_local_data_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        .join("models");
+    let _ = std::fs::create_dir_all(&fallback);
+    fallback
 }
 
 #[tauri::command]
@@ -126,8 +135,27 @@ pub async fn download_ai_model(app: tauri::AppHandle, filename: String) -> Resul
         let app_stdout = app_clone.clone();
         let fname_stdout = fname_clone.clone();
         std::thread::spawn(move || {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines().flatten() {
+            use std::io::Read;
+            let mut reader = BufReader::new(stdout);
+            let mut buf = Vec::new();
+            let mut byte = [0u8; 1];
+            while let Ok(1) = reader.read(&mut byte) {
+                let b = byte[0];
+                if b == b'\n' || b == b'\r' {
+                    let line = String::from_utf8_lossy(&buf).to_string();
+                    if !line.trim().is_empty() {
+                        let _ = app_stdout.emit("model-download-log", ModelDownloadProgress {
+                            filename: fname_stdout.clone(),
+                            log: line,
+                        });
+                    }
+                    buf.clear();
+                } else {
+                    buf.push(b);
+                }
+            }
+            if !buf.is_empty() {
+                let line = String::from_utf8_lossy(&buf).to_string();
                 let _ = app_stdout.emit("model-download-log", ModelDownloadProgress {
                     filename: fname_stdout.clone(),
                     log: line,
@@ -139,8 +167,27 @@ pub async fn download_ai_model(app: tauri::AppHandle, filename: String) -> Resul
         let app_stderr = app_clone.clone();
         let fname_stderr = fname_clone.clone();
         std::thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines().flatten() {
+            use std::io::Read;
+            let mut reader = BufReader::new(stderr);
+            let mut buf = Vec::new();
+            let mut byte = [0u8; 1];
+            while let Ok(1) = reader.read(&mut byte) {
+                let b = byte[0];
+                if b == b'\n' || b == b'\r' {
+                    let line = String::from_utf8_lossy(&buf).to_string();
+                    if !line.trim().is_empty() {
+                        let _ = app_stderr.emit("model-download-log", ModelDownloadProgress {
+                            filename: fname_stderr.clone(),
+                            log: line,
+                        });
+                    }
+                    buf.clear();
+                } else {
+                    buf.push(b);
+                }
+            }
+            if !buf.is_empty() {
+                let line = String::from_utf8_lossy(&buf).to_string();
                 let _ = app_stderr.emit("model-download-log", ModelDownloadProgress {
                     filename: fname_stderr.clone(),
                     log: line,
