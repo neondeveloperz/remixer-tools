@@ -86,6 +86,8 @@ pub fn run() {
             get_audio_cover,
             setup_dependencies,
             get_video_info,
+            get_playlist_info,
+            cancel_download,
             setup_stem_extractor,
             reset_stem_extractor,
             run_stem_extractor,

@@ -1,6 +1,8 @@
 use tauri::{Manager, Emitter};
 use std::io::{BufRead, BufReader, Cursor};
 use std::process::Stdio;
+use std::collections::HashMap;
+use std::sync::Mutex;
 use zip::ZipArchive;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -8,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use crate::models::*;
 use crate::settings::get_settings;
 use crate::storage::get_download_dir;
+
+static ACTIVE_DOWNLOADS: Mutex<Option<HashMap<String, u32>>> = Mutex::new(None);
 
 pub async fn download_file_with_progress(
     app: &tauri::AppHandle,
@@ -123,6 +127,58 @@ pub async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String
 
     let json_str = String::from_utf8_lossy(&output.stdout).to_string();
     Ok(json_str)
+}
+
+#[tauri::command]
+pub async fn get_playlist_info(app: tauri::AppHandle, url: String) -> Result<String, String> {
+    let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let ytdlp_path = if cfg!(target_os = "windows") {
+        app_dir.join("yt-dlp.exe")
+    } else {
+        app_dir.join("yt-dlp")
+    };
+
+    let output = std::process::Command::new(&ytdlp_path)
+        .hide_window()
+        .arg("--flat-playlist")
+        .arg("--dump-single-json")
+        .arg("--no-warnings")
+        .arg(&url)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(err);
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout).to_string();
+    Ok(json_str)
+}
+
+#[tauri::command]
+pub fn cancel_download(id: String) -> Result<(), String> {
+    if let Ok(mut lock) = ACTIVE_DOWNLOADS.lock() {
+        if let Some(map) = lock.as_mut() {
+            if let Some(pid) = map.remove(&id) {
+                #[cfg(target_os = "windows")]
+                {
+                    use std::os::windows::process::CommandExt;
+                    let _ = std::process::Command::new("taskkill")
+                        .creation_flags(0x08000000)
+                        .args(["/F", "/T", "/PID", &pid.to_string()])
+                        .status();
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    let _ = std::process::Command::new("kill")
+                        .args(["-9", &pid.to_string()])
+                        .status();
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -387,6 +443,12 @@ pub async fn run_ytdlp(
             }
         };
 
+        let child_pid = child.id();
+        if let Ok(mut lock) = ACTIVE_DOWNLOADS.lock() {
+            let map = lock.get_or_insert_with(HashMap::new);
+            map.insert(id_clone.clone(), child_pid);
+        }
+
         let stdout = child.stdout.take().unwrap();
         let stderr = child.stderr.take().unwrap();
 
@@ -474,6 +536,11 @@ pub async fn run_ytdlp(
         });
 
         let _ = child.wait();
+        if let Ok(mut lock) = ACTIVE_DOWNLOADS.lock() {
+            if let Some(map) = lock.as_mut() {
+                map.remove(&id_clone);
+            }
+        }
         let _ = h_out.join();
         let _ = h_err.join();
         let _ = app_clone.emit("ytdlp-done", id_clone);
