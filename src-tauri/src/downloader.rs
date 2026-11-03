@@ -224,15 +224,24 @@ pub async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
-                let mut perms = std::fs::metadata(&ffmpeg_path).unwrap().permissions();
-                perms.set_mode(0o755);
-                let _ = std::fs::set_permissions(&ffmpeg_path, perms);
+                if let Ok(metadata) = std::fs::metadata(&ffmpeg_path) {
+                    let mut perms = metadata.permissions();
+                    perms.set_mode(0o755);
+                    let _ = std::fs::set_permissions(&ffmpeg_path, perms);
+                }
             }
-            app.emit("setup-log", "ffmpeg installed.").unwrap();
+            let _ = app.emit("setup-log", "ffmpeg installed.");
 
-            if cfg!(target_os = "macos") {
-                app.emit("setup-log", "Downloading ffprobe for macOS...").unwrap();
-                let ffprobe_url = "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-macos-64.zip";
+            #[cfg(unix)]
+            {
+                let _ = app.emit("setup-log", "Downloading ffprobe...");
+                let ffprobe_url = if cfg!(target_os = "macos") {
+                    "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-macos-64.zip"
+                } else if cfg!(target_arch = "aarch64") {
+                    "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-arm-64.zip"
+                } else {
+                    "https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/ffprobe-6.1-linux-64.zip"
+                };
                 match download_file_with_progress(&app, ffprobe_url, "ffprobe").await {
                     Ok(bytes) => {
                         match zip::ZipArchive::new(std::io::Cursor::new(bytes)) {
@@ -243,28 +252,25 @@ pub async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
                                             let ffprobe_path = app_dir.join("ffprobe");
                                             if let Ok(mut outfile) = std::fs::File::create(&ffprobe_path) {
                                                 let _ = std::io::copy(&mut file, &mut outfile);
-                                                #[cfg(unix)]
-                                                {
-                                                    use std::os::unix::fs::PermissionsExt;
-                                                    if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
-                                                        let mut perms = meta.permissions();
-                                                        perms.set_mode(0o755);
-                                                        let _ = std::fs::set_permissions(&ffprobe_path, perms);
-                                                    }
+                                                use std::os::unix::fs::PermissionsExt;
+                                                if let Ok(meta) = std::fs::metadata(&ffprobe_path) {
+                                                    let mut perms = meta.permissions();
+                                                    perms.set_mode(0o755);
+                                                    let _ = std::fs::set_permissions(&ffprobe_path, perms);
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                app.emit("setup-log", "ffprobe installed.").unwrap();
+                                let _ = app.emit("setup-log", "ffprobe installed.");
                             },
                             Err(e) => {
-                                app.emit("setup-log", format!("Failed to extract ffprobe: {}", e)).unwrap();
+                                let _ = app.emit("setup-log", format!("Failed to extract ffprobe: {}", e));
                             }
                         }
                     },
                     Err(e) => {
-                        app.emit("setup-log", format!("Failed to download ffprobe: {}", e)).unwrap();
+                        let _ = app.emit("setup-log", format!("Failed to download ffprobe: {}", e));
                     }
                 }
             }
@@ -307,7 +313,7 @@ pub async fn run_ytdlp(
     let quality_clone = quality.clone();
     let app_clone = app.clone();
     let app_clone2 = app.clone();
-    let ffmpeg_dir = app_dir.to_str().unwrap().to_string();
+    let ffmpeg_dir = app_dir.to_string_lossy().to_string();
     let id_clone = id.clone();
 
     // Get download directory

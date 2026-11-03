@@ -81,35 +81,17 @@ pub async fn analyze_and_rename_audio(
         }
     };
 
-    // Locate analyzer.py
-    let analyzer_script = app
-        .path()
-        .resource_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("python")
-        .join("analyzer.py");
+    let app_dir = app.path().app_local_data_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let _ = fs::create_dir_all(&app_dir);
 
-    let script_path = if analyzer_script.exists() {
-        analyzer_script
-    } else {
-        let alt = PathBuf::from("python").join("analyzer.py");
-        let alt2 = PathBuf::from("../python").join("analyzer.py");
-        let alt3 = PathBuf::from("src-tauri/python").join("analyzer.py");
-        if alt.exists() {
-            alt
-        } else if alt2.exists() {
-            alt2
-        } else if alt3.exists() {
-            alt3
-        } else {
-            return Err("analyzer.py script not found".to_string());
-        }
-    };
+    // Embed analyzer script directly to guarantee availability in all environments
+    const EMBEDDED_ANALYZER_SCRIPT: &str = include_str!("../python/analyzer.py");
+    let script_path = app_dir.join("analyzer.py");
+    let _ = fs::write(&script_path, EMBEDDED_ANALYZER_SCRIPT);
 
     let file_path_clone = file_path.clone();
     let script_path_clone = script_path.clone();
 
-    let file_path_cmd = file_path.clone();
     let output = tauri::async_runtime::spawn_blocking(move || {
         let mut cmd = std::process::Command::new(&python_path);
         
@@ -182,6 +164,7 @@ pub async fn analyze_and_rename_audio(
     };
     
     let mut final_path = path.clone();
+    let mut rename_msg: Option<String> = None;
     if new_path != path {
         if new_path.exists() {
             let _ = fs::remove_file(&new_path);
@@ -193,13 +176,7 @@ pub async fn analyze_and_rename_audio(
             Err(e) => {
                 log::warn!("Could not rename file after analysis: {}", e);
                 // Return success with original path so workflow is not broken
-                return Ok(AnalyzeAndRenameResponse {
-                    success: true,
-                    new_path: Some(file_path),
-                    bpm: Some(bpm),
-                    key: Some(key),
-                    message: Some(format!("Analysis complete, but renaming was skipped: {}", e)),
-                });
+                rename_msg = Some(format!("Analysis complete, but renaming was skipped: {}", e));
             }
         }
     }

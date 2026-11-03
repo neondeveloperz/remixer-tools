@@ -73,7 +73,7 @@ fn get_separated_midi_path(audio_path: &Path) -> PathBuf {
     parent.join(format!("{}.mid", stem_filename))
 }
 
-fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) {
+fn ensure_midi_dependencies(python_path: &Path, _venv_dir: &Path) {
     // Quick check if basic_pitch and pretty_midi are importable
     let mut check_cmd = std::process::Command::new(python_path);
     #[cfg(target_os = "windows")]
@@ -96,31 +96,25 @@ fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) {
         }
     }
 
-    // Install missing dependencies
-    let pip_path = if cfg!(target_os = "windows") {
-        venv_dir.join("Scripts").join("pip.exe")
-    } else {
-        venv_dir.join("bin").join("pip")
-    };
-
-    if pip_path.exists() {
-        let mut cmd = std::process::Command::new(&pip_path);
-        #[cfg(target_os = "windows")]
-        {
-            use std::os::windows::process::CommandExt;
-            const CREATE_NO_WINDOW: u32 = 0x08000000;
-            cmd.creation_flags(CREATE_NO_WINDOW);
-        }
-        let _ = cmd
-            .arg("install")
-            .arg("--no-deps")
-            .arg("basic-pitch")
-            .arg("pretty-midi")
-            .arg("mir-eval")
-            .arg("mido")
-            .arg("importlib-resources")
-            .output();
+    // Install missing dependencies via python -m pip to avoid shebang path length limits on Unix
+    let mut cmd = std::process::Command::new(python_path);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
     }
+    let _ = cmd
+        .arg("-m")
+        .arg("pip")
+        .arg("install")
+        .arg("--no-deps")
+        .arg("basic-pitch")
+        .arg("pretty-midi")
+        .arg("mir-eval")
+        .arg("mido")
+        .arg("importlib-resources")
+        .output();
 }
 
 #[tauri::command]
@@ -148,30 +142,12 @@ pub async fn convert_audio_to_midi(
         }
     };
 
-    // Locate audio_to_midi.py
-    let script = app
-        .path()
-        .resource_dir()
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("python")
-        .join("audio_to_midi.py");
-
-    let script_path = if script.exists() {
-        script
-    } else {
-        let alt = PathBuf::from("python").join("audio_to_midi.py");
-        let alt2 = PathBuf::from("../python").join("audio_to_midi.py");
-        let alt3 = PathBuf::from("src-tauri/python").join("audio_to_midi.py");
-        if alt.exists() {
-            alt
-        } else if alt2.exists() {
-            alt2
-        } else if alt3.exists() {
-            alt3
-        } else {
-            return Err("audio_to_midi.py script not found".to_string());
-        }
-    };
+    // Embed audio_to_midi.py directly to guarantee availability on all platforms
+    let local_dir = app.path().app_local_data_dir().unwrap_or_default();
+    let _ = std::fs::create_dir_all(&local_dir);
+    const EMBEDDED_AUDIO_TO_MIDI_SCRIPT: &str = include_str!("../python/audio_to_midi.py");
+    let script_path = local_dir.join("audio_to_midi.py");
+    let _ = std::fs::write(&script_path, EMBEDDED_AUDIO_TO_MIDI_SCRIPT);
 
     // Save into dedicated "midi" folder
     let target_out_path = if let Some(ref out) = output_path {

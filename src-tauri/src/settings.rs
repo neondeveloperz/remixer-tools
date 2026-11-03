@@ -5,7 +5,7 @@ use crate::storage::get_storage_dirs_internal;
 pub fn get_settings_path(app: &tauri::AppHandle) -> std::path::PathBuf {
     app.path()
         .app_local_data_dir()
-        .unwrap()
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default())
         .join("settings.json")
 }
 

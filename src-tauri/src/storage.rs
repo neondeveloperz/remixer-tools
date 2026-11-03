@@ -120,6 +120,14 @@ pub fn open_directory(path: &str) -> Result<(), String> {
             .spawn()
             .map_err(|e| e.to_string())?;
     }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(target_dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     
     Ok(())
 }

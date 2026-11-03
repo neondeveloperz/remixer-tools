@@ -77,6 +77,8 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-aarch64-apple-darwin-install_only.tar.gz"
         } else if cfg!(target_os = "macos") {
             "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-apple-darwin-install_only.tar.gz"
+        } else if cfg!(all(target_os = "linux", target_arch = "aarch64")) {
+            "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-aarch64-unknown-linux-gnu-install_only.tar.gz"
         } else {
             "https://github.com/astral-sh/python-build-standalone/releases/download/20240107/cpython-3.11.7+20240107-x86_64-unknown-linux-gnu-install_only.tar.gz"
         };
@@ -86,8 +88,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         let tar_path = app_dir.join("python.tar.gz");
         std::fs::write(&tar_path, bytes).map_err(|e| e.to_string())?;
 
-        app.emit("stem-log", "Extracting Python environment...")
-            .unwrap();
+        let _ = app.emit("stem-log", "Extracting Python environment...");
         std::fs::create_dir_all(&python_dir).map_err(|e| e.to_string())?;
 
         let mut tar_cmd = std::process::Command::new("tar").hide_window();
@@ -100,22 +101,30 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             .status()
             .map_err(|e| format!("Failed to run tar command: {}", e))?;
 
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(&python_exe_path) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(&python_exe_path, perms);
+            }
+        }
+
         if !tar_status.success() || !python_exe_path.exists() {
             return Err("Failed to extract standalone Python.".to_string());
         }
 
         let _ = std::fs::remove_file(&tar_path);
-        app.emit("stem-log", "Standalone Python environment is ready.")
-            .unwrap();
+        let _ = app.emit("stem-log", "Standalone Python environment is ready.");
     }
 
     // Check if audio-separator is installed
     if !separator_path.exists() {
-        app.emit(
+        let _ = app.emit(
             "stem-log",
             "Creating Python Virtual Environment... This may take a while.",
-        )
-        .unwrap();
+        );
 
         if !venv_dir.exists() || !venv_python.exists() {
             if venv_dir.exists() {
@@ -129,6 +138,16 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 .arg(&venv_dir)
                 .status()
                 .map_err(|e| e.to_string())?;
+
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if let Ok(metadata) = std::fs::metadata(&venv_python) {
+                    let mut perms = metadata.permissions();
+                    perms.set_mode(0o755);
+                    let _ = std::fs::set_permissions(&venv_python, perms);
+                }
+            }
 
             if !status.success() || !venv_python.exists() {
                 return Err(
@@ -350,6 +369,16 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
             return Err("Failed to install audio-separator.".to_string());
         }
 
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(&separator_path) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(&separator_path, perms);
+            }
+        }
+
         // Ensure CPU onnxruntime is removed if pulled in transitively on Windows
         #[cfg(target_os = "windows")]
         {
@@ -366,7 +395,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
 
     ensure_separator_dml_patch(&venv_python);
 
-    app.emit("stem-log", "STEM Extractor is ready!").unwrap();
+    let _ = app.emit("stem-log", "STEM Extractor is ready!");
     Ok(())
 }
 

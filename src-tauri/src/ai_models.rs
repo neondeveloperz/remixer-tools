@@ -334,5 +334,12 @@ pub fn open_models_directory(app: tauri::AppHandle) -> Result<(), String> {
             .spawn()
             .map_err(|e| e.to_string())?;
     }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&models_dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
