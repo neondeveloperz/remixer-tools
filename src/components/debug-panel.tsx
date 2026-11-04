@@ -11,6 +11,7 @@ import { appConfigDir, appDataDir, resourceDir } from "@tauri-apps/api/path"
 import { currentMonitor, getCurrentWindow } from "@tauri-apps/api/window"
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import { attachConsole } from "@tauri-apps/plugin-log"
+import { arch, platform, version as osVersion } from "@tauri-apps/plugin-os"
 import {
   AlertTriangleIcon,
   CopyIcon,
@@ -58,6 +59,7 @@ type AppDiagnostics = {
   version: string | null
   identifier: string | null
   tauriVersion: string | null
+  os: string | null
 }
 
 type WindowDiagnostics = {
@@ -607,6 +609,7 @@ export function DebugPanel() {
     version: null,
     identifier: null,
     tauriVersion: null,
+    os: null,
   })
   const [windowInfo, setWindowInfo] = React.useState<WindowDiagnostics>({
     label: "main",
@@ -809,6 +812,8 @@ export function DebugPanel() {
         version,
         identifier,
         tauriVersion,
+        // navigator.platform reports "Win32" even on 64-bit/ARM Windows; the os plugin gives the real values
+        os: `${platform()} ${osVersion()} (${arch()})`,
       })
     }
 
@@ -1545,6 +1550,7 @@ export function DebugPanel() {
                   ["Version", appInfo.version ?? "Unavailable", { code: "await getVersion()", origin: "tauri" }],
                   ["Identifier", appInfo.identifier ?? "Unavailable", { code: "await getIdentifier()", origin: "tauri" }],
                   ["Tauri", appInfo.tauriVersion ?? "Unavailable", { code: "await getTauriVersion()", origin: "tauri" }],
+                  ["OS", appInfo.os ?? "Unavailable", { code: "platform() version() arch()", origin: "tauri" }],
                   ["Webview", windowInfo.label, { code: "getCurrentWebviewWindow().label", origin: "tauri" }],
                   ["Shortcut", "Cmd/Ctrl + D"],
                 ]}
