@@ -1,6 +1,6 @@
 [package]
 name = "remixer-tools"
-version = "1.1.0"
+version = "1.2.0"
 description = "A powerful, cross-platform desktop application designed for DJs, producers, and audio engineers."
 authors = ["armzi & x2infinity & Ittipon787"]
 edition = "2021"
