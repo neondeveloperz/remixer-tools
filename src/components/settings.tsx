@@ -308,32 +308,28 @@ export function Settings() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Audio Formats (with Metadata & Cover)</SelectLabel>
-                      <SelectItem value="mp3_meta">MP3 (with Metadata & Cover)</SelectItem>
+                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Lossless Studio Audio (Full Metadata)</SelectLabel>
+                      <SelectItem value="wav">WAV (Lossless PCM + Metadata)</SelectItem>
+                      <SelectItem value="flac">FLAC (Lossless + Cover Art & Metadata)</SelectItem>
+                      <SelectItem value="alac">ALAC (Apple Lossless + Cover & Meta)</SelectItem>
+                      <SelectItem value="aiff">AIFF (Uncompressed CDJ + Cover & Meta)</SelectItem>
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
-                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Lossless Audio Formats</SelectLabel>
-                      <SelectItem value="wav">WAV (Lossless 24-bit)</SelectItem>
-                      <SelectItem value="flac">FLAC (Lossless)</SelectItem>
-                      <SelectItem value="alac">ALAC (Apple Lossless)</SelectItem>
-                      <SelectItem value="aiff">AIFF (Uncompressed)</SelectItem>
+                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Compressed High-Res Audio (Cover Art & Metadata)</SelectLabel>
+                      <SelectItem value="mp3_meta">MP3 (Cover Art & Metadata Tags)</SelectItem>
+                      <SelectItem value="m4a">M4A (Apple AAC + Cover & Metadata)</SelectItem>
+                      <SelectItem value="opus">Opus (Streaming Fidelity + Cover & Meta)</SelectItem>
+                      <SelectItem value="ogg">OGG (Ogg Vorbis + Cover & Metadata)</SelectItem>
+                      <SelectItem value="aac">AAC (Advanced Audio + Metadata)</SelectItem>
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
-                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Lossy Audio Formats</SelectLabel>
-                      <SelectItem value="opus">Opus (High Efficiency)</SelectItem>
-                      <SelectItem value="m4a">M4A (AAC Audio)</SelectItem>
-                      <SelectItem value="ogg">OGG Vorbis</SelectItem>
-                      <SelectItem value="mp3">MP3 (Standard)</SelectItem>
-                    </SelectGroup>
-                    <SelectSeparator />
-                    <SelectGroup>
-                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Video Formats</SelectLabel>
-                      <SelectItem value="mp4">MP4 (H.264 / AAC)</SelectItem>
-                      <SelectItem value="mkv">MKV (Universal Container)</SelectItem>
-                      <SelectItem value="webm">WebM (VP9 / Opus)</SelectItem>
-                      <SelectItem value="mov">MOV (QuickTime)</SelectItem>
+                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider">Video Formats (Thumbnails, Chapters & Metadata)</SelectLabel>
+                      <SelectItem value="mp4">MP4 (Universal H.264/AAC + Metadata)</SelectItem>
+                      <SelectItem value="mkv">MKV (Matroska Video + Metadata)</SelectItem>
+                      <SelectItem value="webm">WebM (VP9/AV1 + Metadata)</SelectItem>
+                      <SelectItem value="mov">MOV (Apple QuickTime + Metadata)</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

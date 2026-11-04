@@ -79,21 +79,21 @@ function formatDuration(sec?: number): string {
 }
 
 export const FORMAT_LABELS: Record<string, string> = {
-  wav: "WAV (Lossless PCM)",
-  flac: "FLAC (Free Lossless Codec)",
-  alac: "ALAC (Apple Lossless)",
-  aiff: "AIFF (Uncompressed CDJ)",
-  mp3_meta: "MP3 (with Cover Art & Tags)",
-  mp3: "MP3 (Standard Clean)",
-  m4a: "M4A (Apple AAC + Meta)",
-  opus: "Opus (Highest Streaming Fidelity)",
-  aac: "AAC (Advanced Audio)",
-  ogg: "OGG (Ogg Vorbis)",
-  video: "MP4 (Universal H.264/AAC)",
-  mp4: "MP4 (Universal H.264/AAC)",
-  mkv: "MKV (Matroska High Definition)",
-  webm: "WebM (VP9/AV1 + Opus)",
-  mov: "MOV (Apple QuickTime)",
+  wav: "WAV (Lossless PCM + Metadata)",
+  flac: "FLAC (Lossless + Cover Art & Metadata)",
+  alac: "ALAC (Apple Lossless + Cover & Meta)",
+  aiff: "AIFF (Uncompressed CDJ + Cover & Meta)",
+  mp3_meta: "MP3 (Cover Art & Metadata Tags)",
+  mp3: "MP3 (Cover Art & Metadata Tags)",
+  m4a: "M4A (Apple AAC + Cover & Metadata)",
+  opus: "Opus (Streaming Fidelity + Cover & Meta)",
+  aac: "AAC (Advanced Audio + Metadata)",
+  ogg: "OGG (Ogg Vorbis + Cover & Metadata)",
+  video: "MP4 (Universal H.264/AAC + Metadata)",
+  mp4: "MP4 (Universal H.264/AAC + Metadata)",
+  mkv: "MKV (Matroska Video + Metadata)",
+  webm: "WebM (VP9/AV1 + Metadata)",
+  mov: "MOV (Apple QuickTime + Metadata)",
 };
 
 export const QUALITY_LABELS: Record<string, string> = {
@@ -548,34 +548,33 @@ export function YtDlp() {
                   <SelectContent className="max-h-84">
                     <SelectGroup>
                       <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
-                        Lossless Studio Audio
+                        Lossless Studio Audio (Full Metadata)
                       </SelectLabel>
-                      <SelectItem value="wav">WAV (Lossless PCM)</SelectItem>
-                      <SelectItem value="flac">FLAC (Free Lossless Codec)</SelectItem>
-                      <SelectItem value="alac">ALAC (Apple Lossless)</SelectItem>
-                      <SelectItem value="aiff">AIFF (Uncompressed CDJ)</SelectItem>
+                      <SelectItem value="wav">WAV (Lossless PCM + Metadata)</SelectItem>
+                      <SelectItem value="flac">FLAC (Lossless + Cover Art & Metadata)</SelectItem>
+                      <SelectItem value="alac">ALAC (Apple Lossless + Cover & Meta)</SelectItem>
+                      <SelectItem value="aiff">AIFF (Uncompressed CDJ + Cover & Meta)</SelectItem>
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
                       <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
-                        Compressed High-Res Audio
+                        Compressed High-Res Audio (Cover Art & Metadata)
                       </SelectLabel>
-                      <SelectItem value="mp3_meta">MP3 (with Cover Art & Tags)</SelectItem>
-                      <SelectItem value="mp3">MP3 (Standard Clean)</SelectItem>
-                      <SelectItem value="m4a">M4A (Apple AAC + Meta)</SelectItem>
-                      <SelectItem value="opus">Opus (Highest Streaming Fidelity)</SelectItem>
-                      <SelectItem value="aac">AAC (Advanced Audio)</SelectItem>
-                      <SelectItem value="ogg">OGG (Ogg Vorbis)</SelectItem>
+                      <SelectItem value="mp3_meta">MP3 (Cover Art & Metadata Tags)</SelectItem>
+                      <SelectItem value="m4a">M4A (Apple AAC + Cover & Metadata)</SelectItem>
+                      <SelectItem value="opus">Opus (Streaming Fidelity + Cover & Meta)</SelectItem>
+                      <SelectItem value="ogg">OGG (Ogg Vorbis + Cover & Metadata)</SelectItem>
+                      <SelectItem value="aac">AAC (Advanced Audio + Metadata)</SelectItem>
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
                       <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
-                        Video Formats
+                        Video Formats (Thumbnails, Chapters & Metadata)
                       </SelectLabel>
-                      <SelectItem value="video">MP4 (Universal H.264/AAC)</SelectItem>
-                      <SelectItem value="mkv">MKV (Matroska High Definition)</SelectItem>
-                      <SelectItem value="webm">WebM (VP9/AV1 + Opus)</SelectItem>
-                      <SelectItem value="mov">MOV (Apple QuickTime)</SelectItem>
+                      <SelectItem value="video">MP4 (Universal H.264/AAC + Metadata)</SelectItem>
+                      <SelectItem value="mkv">MKV (Matroska Video + Metadata)</SelectItem>
+                      <SelectItem value="webm">WebM (VP9/AV1 + Metadata)</SelectItem>
+                      <SelectItem value="mov">MOV (Apple QuickTime + Metadata)</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

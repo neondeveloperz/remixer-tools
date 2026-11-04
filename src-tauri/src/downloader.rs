@@ -432,12 +432,15 @@ pub async fn run_ytdlp(
                 cmd.arg("--audio-quality").arg(audio_q);
             }
 
-            // Embed metadata and thumbnails for formats that support it
-            if matches!(format_clone.as_str(), "mp3_meta" | "m4a" | "flac" | "alac" | "opus") {
-                cmd.arg("--embed-metadata");
+            // Embed metadata and chapters for all audio formats
+            cmd.arg("--embed-metadata");
+            cmd.arg("--embed-chapters");
+            cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
+
+            // Embed cover art thumbnail for formats that support picture embedding
+            if matches!(format_clone.as_str(), "mp3" | "mp3_meta" | "flac" | "alac" | "m4a" | "opus" | "ogg" | "aiff") {
                 cmd.arg("--embed-thumbnail");
                 cmd.arg("--convert-thumbnails").arg("jpg");
-                cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
             }
         } else {
             // Video formats: mp4, mkv, webm, mov, avi
@@ -463,8 +466,10 @@ pub async fn run_ytdlp(
 
             cmd.arg("--merge-output-format").arg(container);
             cmd.arg("--embed-metadata");
+            cmd.arg("--embed-chapters");
             cmd.arg("--embed-thumbnail");
             cmd.arg("--convert-thumbnails").arg("jpg");
+            cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
         }
 
         cmd.arg(&url_clone);

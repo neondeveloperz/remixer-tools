@@ -141,6 +141,54 @@ pub async fn analyze_and_rename_audio(
     let bpm = result.bpm.unwrap_or(0.0);
     let key = result.key.unwrap_or_default();
     
+    // Embed BPM and Key metadata directly into the audio file tags via ffmpeg
+    if bpm > 0.0 || !key.is_empty() {
+        let ffmpeg_exe = if cfg!(target_os = "windows") {
+            app_dir.join("ffmpeg.exe")
+        } else {
+            app_dir.join("ffmpeg")
+        };
+
+        if ffmpeg_exe.exists() {
+            let temp_tagged = path.with_extension(format!("tagged_tmp.{}", ext));
+            let bpm_str = (bpm.round() as u32).to_string();
+
+            let mut tag_cmd = std::process::Command::new(&ffmpeg_exe);
+            tag_cmd.arg("-y").arg("-i").arg(&path).arg("-c").arg("copy");
+
+            if bpm > 0.0 {
+                tag_cmd
+                    .arg("-metadata").arg(format!("TBPM={}", bpm_str))
+                    .arg("-metadata").arg(format!("BPM={}", bpm_str))
+                    .arg("-metadata").arg(format!("tmpo={}", bpm_str));
+            }
+
+            if !key.is_empty() {
+                tag_cmd
+                    .arg("-metadata").arg(format!("TKEY={}", key))
+                    .arg("-metadata").arg(format!("KEY={}", key))
+                    .arg("-metadata").arg(format!("INITIALKEY={}", key));
+            }
+
+            tag_cmd.arg(&temp_tagged);
+
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::process::CommandExt;
+                tag_cmd.creation_flags(0x08000000);
+            }
+
+            if let Ok(status) = tag_cmd.status() {
+                if status.success() && temp_tagged.exists() {
+                    let _ = fs::remove_file(&path);
+                    let _ = fs::rename(&temp_tagged, &path);
+                } else if temp_tagged.exists() {
+                    let _ = fs::remove_file(&temp_tagged);
+                }
+            }
+        }
+    }
+
     // Format key (e.g. "C Minor" -> "C_Minor")
     let key_formatted = key.replace(' ', "_");
     
