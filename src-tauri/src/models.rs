@@ -6,10 +6,40 @@ pub struct ProgressPayload {
     pub progress: u8,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(default)]
 pub struct AppSettings {
     pub download_dir: String,
     pub filename_template: Option<String>,
+    // Downloader defaults
+    pub default_format: Option<String>,
+    pub default_quality: Option<String>,
+    pub max_concurrent_downloads: Option<u32>,
+    pub auto_analyze_audio: Option<bool>,
+    // STEM Extractor defaults
+    pub default_stem_model: Option<String>,
+    pub default_stem_format: Option<String>,
+    pub default_overlap: Option<String>,
+    pub enable_gpu_acceleration: Option<bool>,
+    pub low_memory_mode: Option<bool>,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            download_dir: String::new(),
+            filename_template: Some("%(title)s.%(ext)s".to_string()),
+            default_format: Some("mp3_meta".to_string()),
+            default_quality: Some("best".to_string()),
+            max_concurrent_downloads: Some(2),
+            auto_analyze_audio: Some(true),
+            default_stem_model: Some("htdemucs.yaml".to_string()),
+            default_stem_format: Some("FLAC".to_string()),
+            default_overlap: Some("4".to_string()),
+            enable_gpu_acceleration: Some(true),
+            low_memory_mode: Some(true),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

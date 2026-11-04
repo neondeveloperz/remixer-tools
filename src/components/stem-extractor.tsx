@@ -213,6 +213,30 @@ export function StemExtractor({
   const [extractLog, setExtractLog] = useState<string[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
+  // Initialize defaults from global settings
+  useEffect(() => {
+    const initFromSettings = async () => {
+      try {
+        const s = await invoke<any>("get_settings");
+        if (!selectedModel && s.default_stem_model) {
+          setModel(s.default_stem_model);
+          onModelChange?.(s.default_stem_model);
+        }
+        if (s.default_stem_format) setOutputFormat(s.default_stem_format);
+        if (s.default_overlap) setOverlap(s.default_overlap);
+        if (s.enable_gpu_acceleration !== undefined && s.enable_gpu_acceleration !== null) {
+          setUseGpu(s.enable_gpu_acceleration);
+        }
+        if (s.low_memory_mode !== undefined && s.low_memory_mode !== null) {
+          setLowMemory(s.low_memory_mode);
+        }
+      } catch (e) {
+        console.warn("Failed to load settings in stem extractor:", e);
+      }
+    };
+    initFromSettings();
+  }, [selectedModel]);
+
   const setupStarted = useRef(false);
 
   // Helper to add multiple files into the batch queue

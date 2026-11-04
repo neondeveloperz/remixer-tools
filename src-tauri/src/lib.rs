@@ -78,6 +78,7 @@ pub fn run() {
             set_download_dir,
             set_filename_template,
             get_settings,
+            save_settings,
             get_storage_dirs,
             open_storage_folder,
             open_path,

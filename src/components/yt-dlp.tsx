@@ -112,6 +112,21 @@ export function YtDlp() {
 
   const filepathsRef = useRef<Record<string, string>>({});
 
+  // Load user default settings on mount
+  useEffect(() => {
+    const initDefaults = async () => {
+      try {
+        const s = await invoke<any>("get_settings");
+        if (s.default_format) setFormat(s.default_format);
+        if (s.default_quality) setQuality(s.default_quality);
+        if (s.max_concurrent_downloads) setMaxConcurrent(s.max_concurrent_downloads);
+      } catch (e) {
+        console.warn("Failed to read settings in yt-dlp:", e);
+      }
+    };
+    initDefaults();
+  }, []);
+
   // Detect playlist url pattern
   const isPlaylistUrl = (testUrl: string) => {
     const trimmed = testUrl.trim().toLowerCase();
@@ -174,29 +189,49 @@ export function YtDlp() {
         : filepathsRef.current[id];
 
       if (targetPath) {
-        // Update status to analyzing BPM & Key
-        setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
-
+        let shouldAnalyze = true;
         try {
-          const res = await invoke<{ success: boolean; new_path?: string; bpm?: number; key?: string; message?: string }>("analyze_and_rename_audio", {
-            filePath: targetPath
-          });
+          const s = await invoke<any>("get_settings");
+          if (s.auto_analyze_audio === false) {
+            shouldAnalyze = false;
+          }
+        } catch {
+          // fallback to analyzing
+        }
 
-          const finalPath = res.new_path || targetPath;
-          setDownloads(current => current.map(item => {
-            if (item.id === id) {
-              return {
-                ...item,
-                status: 'completed',
-                progress: 100,
-                eta: '00:00',
-                filepath: finalPath
-              };
-            }
-            return item;
-          }));
-        } catch (e) {
-          console.error("Analysis failed:", e);
+        if (shouldAnalyze) {
+          // Update status to analyzing BPM & Key
+          setDownloads(current => current.map(item => item.id === id ? { ...item, status: 'analyzing', eta: 'Analyzing BPM & Key...' } : item));
+
+          try {
+            const res = await invoke<{ success: boolean; new_path?: string; bpm?: number; key?: string; message?: string }>("analyze_and_rename_audio", {
+              filePath: targetPath
+            });
+
+            const finalPath = res.new_path || targetPath;
+            setDownloads(current => current.map(item => {
+              if (item.id === id) {
+                return {
+                  ...item,
+                  status: 'completed',
+                  progress: 100,
+                  eta: '00:00',
+                  filepath: finalPath
+                };
+              }
+              return item;
+            }));
+          } catch (e) {
+            console.error("Analysis failed:", e);
+            setDownloads(current => current.map(item => {
+              if (item.id === id) {
+                return { ...item, status: 'completed', progress: 100, eta: '00:00', filepath: targetPath };
+              }
+              return item;
+            }));
+          }
+        } else {
+          // Skip auto analysis and mark complete
           setDownloads(current => current.map(item => {
             if (item.id === id) {
               return { ...item, status: 'completed', progress: 100, eta: '00:00', filepath: targetPath };

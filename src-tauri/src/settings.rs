@@ -46,27 +46,33 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
 
     let mut default_settings = AppSettings::default();
     default_settings.download_dir = default_base_dir;
-    default_settings.filename_template = Some("%(title)s.%(ext)s".to_string());
 
     Ok(default_settings)
+}
+
+#[tauri::command]
+pub fn save_settings(app: tauri::AppHandle, settings: AppSettings) -> Result<(), String> {
+    let settings_path = get_settings_path(&app);
+    if let Some(parent) = settings_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+    std::fs::write(settings_path, json).map_err(|e| e.to_string())?;
+    // Pre-create library and extractor in base dir
+    let _ = get_storage_dirs_internal(&app);
+    Ok(())
 }
 
 #[tauri::command]
 pub fn set_download_dir(app: tauri::AppHandle, dir: String) -> Result<(), String> {
     let mut settings = get_settings(app.clone())?;
     settings.download_dir = dir;
-    let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
-    std::fs::write(get_settings_path(&app), json).map_err(|e| e.to_string())?;
-    // Pre-create library and extractor in new base dir
-    let _ = get_storage_dirs_internal(&app);
-    Ok(())
+    save_settings(app, settings)
 }
 
 #[tauri::command]
 pub fn set_filename_template(app: tauri::AppHandle, template: String) -> Result<(), String> {
     let mut settings = get_settings(app.clone())?;
     settings.filename_template = Some(template);
-    let json = serde_json::to_string(&settings).map_err(|e| e.to_string())?;
-    std::fs::write(get_settings_path(&app), json).map_err(|e| e.to_string())?;
-    Ok(())
+    save_settings(app, settings)
 }
