@@ -1,5 +1,18 @@
 # Changelog
 
+## 🚀 What's New in v1.2.1
+- **STEM Extractor Improvements & GPU Acceleration:**
+  - Added "Copy Log" and "Clear" toolbar buttons to easily copy extraction logs and environment setup/error logs to clipboard.
+  - Optimized Demucs parameters (`demucs_shifts=0/1` and `demucs_segment_size=40`) for drastically reduced CPU/GPU memory footprint and faster extraction.
+  - Pinned PyTorch pip installation to the CUDA 12.4 repository (`--index-url https://download.pytorch.org/whl/cu124`) to guarantee NVIDIA GPU acceleration.
+
+## 🚀 What's New in v1.2.0
+- **Audio Downloader Format & Metadata Expansion:**
+  - Added comprehensive audio format support: WAV (Lossless PCM), FLAC, ALAC, AIFF, MP3, M4A, Opus, Ogg Vorbis, and AAC.
+  - Embedded rich metadata (ID3 tags, album art cover, chapter markers, and automatic BPM/Key detection tags) across supported formats.
+  - Simplified and cleaned format selection labels in the downloader interface.
+
+
 ## 🚀 What's New in v1.0.0
 - **Built-in Auto Updater:**
   - Integrated Tauri's native auto-updater with GitHub Releases. The app will now automatically check for new versions on startup, display release notes, and install updates seamlessly without requiring manual downloads.
