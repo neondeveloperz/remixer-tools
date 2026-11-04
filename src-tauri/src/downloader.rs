@@ -408,33 +408,63 @@ pub async fn run_ytdlp(
             }
         }
 
-        if format_clone == "mp3" || format_clone == "mp3_meta" {
-            let audio_q = if quality_clone == "best" { "320K" } else { quality_clone.as_str() };
-            cmd.arg("-f").arg("bestaudio/best");
-            cmd.arg("-x").arg("--audio-format").arg("mp3");
-            cmd.arg("--audio-quality").arg(audio_q);
+        let is_audio = matches!(
+            format_clone.as_str(),
+            "mp3" | "mp3_meta" | "wav" | "flac" | "alac" | "aiff" | "m4a" | "aac" | "ogg" | "opus"
+        );
 
-            if format_clone == "mp3_meta" {
+        if is_audio {
+            cmd.arg("-f").arg("bestaudio/best");
+            let audio_format = match format_clone.as_str() {
+                "mp3_meta" => "mp3",
+                other => other,
+            };
+            cmd.arg("-x").arg("--audio-format").arg(audio_format);
+
+            if matches!(format_clone.as_str(), "wav" | "flac" | "alac" | "aiff") {
+                cmd.arg("--audio-quality").arg("0");
+            } else {
+                let audio_q = if quality_clone == "best" {
+                    "320K"
+                } else {
+                    quality_clone.as_str()
+                };
+                cmd.arg("--audio-quality").arg(audio_q);
+            }
+
+            // Embed metadata and thumbnails for formats that support it
+            if matches!(format_clone.as_str(), "mp3_meta" | "m4a" | "flac" | "alac" | "opus") {
                 cmd.arg("--embed-metadata");
                 cmd.arg("--embed-thumbnail");
                 cmd.arg("--convert-thumbnails").arg("jpg");
                 cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
             }
-        } else if format_clone == "wav" {
-            cmd.arg("-f").arg("bestaudio/best");
-            cmd.arg("-x").arg("--audio-format").arg("wav");
-            cmd.arg("--audio-quality").arg("0");
         } else {
-            // Video format
+            // Video formats: mp4, mkv, webm, mov, avi
+            let container = match format_clone.as_str() {
+                "mkv" => "mkv",
+                "webm" => "webm",
+                "mov" => "mov",
+                "avi" => "avi",
+                _ => "mp4",
+            };
+
             if quality_clone == "best" {
                 cmd.arg("-f")
-                    .arg("bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best");
+                    .arg("bestvideo+bestaudio/best");
             } else {
                 let height = quality_clone.replace("p", "");
-                let f_arg = format!("bestvideo[ext=mp4][height<={}]+bestaudio[ext=m4a]/best[ext=mp4][height<={}]/best", height, height);
+                let f_arg = format!(
+                    "bestvideo[height<={}]+bestaudio/best[height<={}]/best",
+                    height, height
+                );
                 cmd.arg("-f").arg(&f_arg);
             }
-            cmd.arg("--merge-output-format").arg("mp4");
+
+            cmd.arg("--merge-output-format").arg(container);
+            cmd.arg("--embed-metadata");
+            cmd.arg("--embed-thumbnail");
+            cmd.arg("--convert-thumbnails").arg("jpg");
         }
 
         cmd.arg(&url_clone);

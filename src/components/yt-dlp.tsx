@@ -25,7 +25,10 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -471,11 +474,38 @@ export function YtDlp() {
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Format" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mp3_meta">Audio (MP3 with Meta)</SelectItem>
-                    <SelectItem value="mp3">Audio (MP3 Clean)</SelectItem>
-                    <SelectItem value="wav">Audio (WAV Lossless)</SelectItem>
-                    <SelectItem value="video">Video (MP4)</SelectItem>
+                  <SelectContent className="max-h-84">
+                    <SelectGroup>
+                      <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
+                        Lossless Studio Audio
+                      </SelectLabel>
+                      <SelectItem value="wav">WAV (Lossless PCM)</SelectItem>
+                      <SelectItem value="flac">FLAC (Free Lossless Codec)</SelectItem>
+                      <SelectItem value="alac">ALAC (Apple Lossless)</SelectItem>
+                      <SelectItem value="aiff">AIFF (Uncompressed CDJ)</SelectItem>
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
+                        Compressed High-Res Audio
+                      </SelectLabel>
+                      <SelectItem value="mp3_meta">MP3 (with Cover Art & Tags)</SelectItem>
+                      <SelectItem value="mp3">MP3 (Standard Clean)</SelectItem>
+                      <SelectItem value="m4a">M4A (Apple AAC + Meta)</SelectItem>
+                      <SelectItem value="opus">Opus (Highest Streaming Fidelity)</SelectItem>
+                      <SelectItem value="aac">AAC (Advanced Audio)</SelectItem>
+                      <SelectItem value="ogg">OGG (Ogg Vorbis)</SelectItem>
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[11px] font-semibold text-muted-foreground uppercase">
+                        Video Formats
+                      </SelectLabel>
+                      <SelectItem value="video">MP4 (Universal H.264/AAC)</SelectItem>
+                      <SelectItem value="mkv">MKV (Matroska High Definition)</SelectItem>
+                      <SelectItem value="webm">WebM (VP9/AV1 + Opus)</SelectItem>
+                      <SelectItem value="mov">MOV (Apple QuickTime)</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -491,25 +521,28 @@ export function YtDlp() {
                     <SelectValue placeholder="Quality" />
                   </SelectTrigger>
                   <SelectContent>
-                    {format === "video" ? (
+                    {['video', 'mp4', 'mkv', 'webm', 'mov'].includes(format) ? (
                       <>
-                        <SelectItem value="best">Best Quality</SelectItem>
-                        <SelectItem value="2160p">4K (2160p)</SelectItem>
-                        <SelectItem value="1080p">1080p</SelectItem>
-                        <SelectItem value="720p">720p</SelectItem>
-                        <SelectItem value="480p">480p</SelectItem>
+                        <SelectItem value="best">Best Quality Available</SelectItem>
+                        <SelectItem value="4320p">8K Ultra HD (4320p)</SelectItem>
+                        <SelectItem value="2160p">4K Ultra HD (2160p)</SelectItem>
+                        <SelectItem value="1440p">2K Quad HD (1440p)</SelectItem>
+                        <SelectItem value="1080p">Full HD (1080p 60fps)</SelectItem>
+                        <SelectItem value="720p">HD (720p)</SelectItem>
+                        <SelectItem value="480p">SD (480p)</SelectItem>
+                        <SelectItem value="360p">Low (360p)</SelectItem>
                       </>
-                    ) : format === "wav" ? (
+                    ) : ['wav', 'flac', 'alac', 'aiff'].includes(format) ? (
                       <>
                         <SelectItem value="best">Lossless (Source PCM)</SelectItem>
                       </>
                     ) : (
                       <>
-                        <SelectItem value="best">Best Audio (320kbps)</SelectItem>
-                        <SelectItem value="320K">320 kbps</SelectItem>
-                        <SelectItem value="256K">256 kbps</SelectItem>
-                        <SelectItem value="192K">192 kbps</SelectItem>
-                        <SelectItem value="128K">128 kbps</SelectItem>
+                        <SelectItem value="best">Best Audio (up to 320kbps)</SelectItem>
+                        <SelectItem value="320K">320 kbps (Extreme Quality)</SelectItem>
+                        <SelectItem value="256K">256 kbps (High Quality)</SelectItem>
+                        <SelectItem value="192K">192 kbps (Standard Quality)</SelectItem>
+                        <SelectItem value="128K">128 kbps (Space Saver)</SelectItem>
                       </>
                     )}
                   </SelectContent>
@@ -731,9 +764,13 @@ export function YtDlp() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="truncate">
                         <span className="bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5 rounded-full mr-2">
-                          {item.format === 'wav'
-                            ? 'WAV Lossless'
-                            : `${item.quality === 'best' ? 'Best' : item.quality} ${item.format === 'mp3_meta' ? 'MP3 + Meta' : item.format.toUpperCase()}`}
+                          {['wav', 'flac', 'alac', 'aiff'].includes(item.format)
+                            ? `${item.format.toUpperCase()} Lossless`
+                            : ['video', 'mp4', 'mkv', 'webm', 'mov'].includes(item.format)
+                            ? `${item.quality === 'best' ? 'Best' : item.quality} ${item.format === 'video' ? 'MP4' : item.format.toUpperCase()}`
+                            : item.format === 'mp3_meta'
+                            ? `${item.quality === 'best' ? '320K' : item.quality} MP3 + Meta`
+                            : `${item.quality === 'best' ? 'Best' : item.quality} ${item.format.toUpperCase()}`}
                         </span>
                         <span className="font-medium text-sm truncate">{item.title}</span>
                       </div>
