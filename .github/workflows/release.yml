@@ -23,14 +23,14 @@ jobs:
             portableUpload: true
           - name: "macOS Apple Silicon"
             platform: "macos-latest"
-            args: "--target aarch64-apple-darwin --bundles dmg"
+            args: "--target aarch64-apple-darwin --bundles app,dmg"
             rustTargets: "aarch64-apple-darwin"
             assetPattern: "[name]-[version]-[platform]-[arch][setup][ext]"
             uploadPlainBinary: false
             portableUpload: false
           - name: "macOS Intel"
             platform: "macos-latest"
-            args: "--target x86_64-apple-darwin --bundles dmg"
+            args: "--target x86_64-apple-darwin --bundles app,dmg"
             rustTargets: "x86_64-apple-darwin"
             assetPattern: "[name]-[version]-[platform]-[arch][setup][ext]"
             uploadPlainBinary: false
