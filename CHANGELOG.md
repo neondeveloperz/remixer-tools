@@ -1,5 +1,17 @@
 # Changelog
 
+## 🚀 What's New in v1.3.1
+- **Media Tools (Settings → Storage & Appearance):**
+  - New "Check & Update" button for yt-dlp: checks GitHub and installs the newest version automatically (verified against the release checksums).
+  - Choose which FFmpeg build to install (Windows: master, n9.0, n8.1; macOS/Linux: b6.x). FFmpeg and ffprobe are always installed together.
+- **Fixes:**
+  - Downloads with Thai or other non-Latin titles were reported with an empty file name (e.g. `library\  .mp3`), which broke BPM/Key analysis and renaming. yt-dlp output is now forced to UTF-8.
+  - STEM extraction on AMD/Intel on-board graphics no longer runs ~8x slower: CPU-only systems skip autocast, which ran as bfloat16 on the CPU.
+  - MIDI conversion with an incomplete AI environment now explains how to fix it (Repair STEM Extractor) instead of showing `_default_model_type is not defined`.
+- **Help & Troubleshooting:**
+  - Rewritten Help page covering every tool, SmartScreen/Gatekeeper warnings, and updates.
+  - New "Open Log Folder" and "Copy Path" buttons so users can send `Remixer Tools.log` with bug reports.
+
 ## 🚀 What's New in v1.3.0
 - **Single Instance & Window State:**
   - Launching the app again now focuses the running window instead of opening a second instance that would race on the shared Python environment, settings, and output folders.
