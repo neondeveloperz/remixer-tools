@@ -408,6 +408,23 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Whether the venv's PyTorch can use CUDA. Probed once per session (importing torch takes seconds).
+/// shortcut: cached until restart, so a "Repair" that swaps the torch build needs an app restart to be re-probed.
+#[cfg(not(target_os = "macos"))]
+fn torch_has_cuda(python_path: &std::path::Path) -> bool {
+    static TORCH_CUDA: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *TORCH_CUDA.get_or_init(|| {
+        let ok = std::process::Command::new(python_path)
+            .hide_window()
+            .args(["-c", "import sys, torch; sys.exit(0 if torch.cuda.is_available() else 1)"])
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        log::info!("PyTorch CUDA available: {}", ok);
+        ok
+    })
+}
+
 #[allow(unused_variables)]
 pub fn ensure_separator_dml_patch(python_path: &std::path::Path) {
     #[cfg(target_os = "windows")]
@@ -623,8 +640,12 @@ fn sanitize_folder_name(name: &str) -> String {
             }
             #[cfg(not(target_os = "macos"))]
             {
-                // Use PyTorch FP16 autocast to halve intermediate activation memory on GPU
-                cmd.arg("--use_autocast");
+                // FP16 autocast halves activation memory on CUDA. Without CUDA (AMD/Intel iGPU: no
+                // torch-directml, so audio-separator runs on CPU) it becomes CPU bfloat16 autocast,
+                // measured ~8x slower than fp32 on CPUs without native BF16.
+                if torch_has_cuda(&python_path) {
+                    cmd.arg("--use_autocast");
+                }
             }
         }
 
