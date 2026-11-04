@@ -292,6 +292,7 @@ export function DawTrackMixer({ tracks: propTracks, title, onOpenFolder, classNa
 
       if (isSuccess && midiPath) {
         const noteCount = res.note_count ?? res.noteCount ?? 0;
+        if (res.message) toast.warning("Basic Pitch unavailable, used fallback engine", { description: res.message });
         setMidiStatus((prev) => ({
           ...prev,
           [key]: {

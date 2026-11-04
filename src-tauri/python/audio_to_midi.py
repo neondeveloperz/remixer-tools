@@ -141,8 +141,9 @@ def detect_audio_bpm_and_phase(audio_path, explicit_bpm=None):
         if companion_stem:
             target_path = companion_stem
 
-        # Load up to 75 seconds for fast & accurate tempo mapping
-        y, sr = librosa.load(target_path, sr=22050, mono=True, duration=75.0)
+        # HPSS cost is linear in length: 30s gave identical tempo/phase to 75s in testing at ~1/4 the time.
+        # shortcut: songs with a beatless intro >30s may mis-detect; upgrade to skipping leading silence/low-onset audio if reported.
+        y, sr = librosa.load(target_path, sr=22050, mono=True, duration=30.0)
 
         # Isolate percussive transients via HPSS
         try:
@@ -500,8 +501,9 @@ def quantize_midi_to_key(midi_data, root, mode, is_monophonic=False):
             total_notes += 1
             dur = n.end - n.start
 
-            # Only prune microscopic zero-energy noise clicks (under 25ms with velocity < 20)
-            if dur < 0.025 and n.velocity < 20:
+            # Prune short, weak blips (measured: <90ms notes have median raw velocity ~35 vs ~44 for real notes).
+            # Must run on raw velocities, before extend_short_notes / remap_musical_velocities.
+            if dur < 0.09 and n.velocity < 40:
                 pruned_count += 1
                 continue
 
@@ -628,14 +630,14 @@ def convert_with_basic_pitch(audio_path, output_midi_path, preset="general", key
         min_len = 20
     elif sensitivity_lower in ["clean", "strict", "low"]:
         # Strict: Focuses on strong, prominent notes and ignores quiet artifacts
+        onset_sens = 0.60
+        frame_sens = 0.40
+        min_len = 80
+    else:  # "balanced" (Default)
+        # Basic Pitch's own onset/frame defaults; lower values roughly doubled note count with mostly <90ms ghosts
         onset_sens = 0.50
         frame_sens = 0.30
-        min_len = 45
-    else:  # "balanced" (Default)
-        # Optimized for modern songs with verse/chorus dynamic contrast
-        onset_sens = 0.38
-        frame_sens = 0.22
-        min_len = 30
+        min_len = 58
 
     # 3. Full-Spectrum frequency coverage (C1 to B7 / C8)
     C1_A0_FREQ = 27.5    # Covers down to C1 (32.7 Hz) and sub-bass A0
@@ -701,6 +703,22 @@ def convert_with_basic_pitch(audio_path, output_midi_path, preset="general", key
 
     if is_piano:
         filter_piano_noise(midi_data)
+
+    # Detect musical key (from explicit argument, filename, or note distribution) and gate noise
+    # while velocities and durations are still raw.
+    root, mode = extract_key_from_string(key_arg)
+    if not root:
+        root, mode = extract_key_from_string(audio_path)
+    if not root:
+        root, mode = estimate_key_from_midi(midi_data)
+
+    key_applied = None
+    if root and mode:
+        # Keep polyphonic by default so harmonies and backing vocals are never discarded!
+        quantize_midi_to_key(midi_data, root, mode, is_monophonic=False)
+        key_applied = f"{root} {mode.capitalize()}"
+
+    if is_piano:
         extend_short_notes(midi_data, bpm=bpm, min_dur_ms=70)
     elif not is_fast:
         extend_short_notes(midi_data, bpm=bpm, min_dur_ms=55)
@@ -722,19 +740,6 @@ def convert_with_basic_pitch(audio_path, output_midi_path, preset="general", key
             treble_inst.notes = treble_notes
             bass_inst.notes = bass_notes
             midi_data.instruments = [treble_inst, bass_inst]
-
-    # Detect musical key (from explicit argument, filename, or note distribution)
-    root, mode = extract_key_from_string(key_arg)
-    if not root:
-        root, mode = extract_key_from_string(audio_path)
-    if not root:
-        root, mode = estimate_key_from_midi(midi_data)
-
-    key_applied = None
-    if root and mode:
-        # Keep polyphonic by default so harmonies and backing vocals are never discarded!
-        quantize_midi_to_key(midi_data, root, mode, is_monophonic=False)
-        key_applied = f"{root} {mode.capitalize()}"
 
     # Ensure initial tempo is written into MIDI file
     if len(midi_data.instruments) > 0:
@@ -814,6 +819,8 @@ def convert_with_onset_fallback(audio_path, output_midi_path, key_arg=None, expl
             end=times[-1]
         ))
 
+    pm.instruments.append(inst)  # must be attached before key quantization, which walks pm.instruments
+
     # Apply Key Quantization if key is present
     root, mode = extract_key_from_string(key_arg)
     if not root:
@@ -823,8 +830,6 @@ def convert_with_onset_fallback(audio_path, output_midi_path, key_arg=None, expl
     if root and mode:
         quantize_midi_to_key(pm, root, mode, is_monophonic=False)
         key_applied = f"{root} {mode.capitalize()}"
-
-    pm.instruments.append(inst)
 
     # Apply Musical Beat-Grid Quantization
     quantize_notes_to_grid(pm, bpm=bpm, first_beat=first_beat, grid=quantize_grid, strength=quantize_strength)

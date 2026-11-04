@@ -251,6 +251,8 @@ export function MidiExtractor({
           engine: res.engine || "Spotify Basic Pitch",
         };
         setResult(conversionRes);
+        // Backend sets message only when Basic Pitch failed and the monophonic fallback was used
+        if (res.message) toast.warning("Basic Pitch unavailable, used fallback engine", { description: res.message });
 
         toast.success(`MIDI Transcription Complete!`, {
           description: `Extracted ${noteCount} notes. Saved in the same folder alongside audio stems.`,

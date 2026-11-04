@@ -73,7 +73,20 @@ fn get_separated_midi_path(audio_path: &Path) -> PathBuf {
     parent.join(format!("{}.mid", stem_filename))
 }
 
-fn ensure_midi_dependencies(python_path: &Path, _venv_dir: &Path) {
+// Set after the first successful check so later conversions skip spawning an extra Python process.
+static MIDI_DEPS_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    if MIDI_DEPS_READY.load(Ordering::Relaxed) {
+        return Ok(());
+    }
+    check_or_install_midi_dependencies(python_path, venv_dir)?;
+    MIDI_DEPS_READY.store(true, Ordering::Relaxed);
+    Ok(())
+}
+
+fn check_or_install_midi_dependencies(python_path: &Path, _venv_dir: &Path) -> Result<(), String> {
     // Quick check if basic_pitch and pretty_midi are importable
     let mut check_cmd = std::process::Command::new(python_path);
     #[cfg(target_os = "windows")]
@@ -92,7 +105,7 @@ fn ensure_midi_dependencies(python_path: &Path, _venv_dir: &Path) {
 
     if let Ok(status) = check {
         if status.success() {
-            return;
+            return Ok(());
         }
     }
 
@@ -104,7 +117,7 @@ fn ensure_midi_dependencies(python_path: &Path, _venv_dir: &Path) {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
-    let _ = cmd
+    let out = cmd
         .arg("-m")
         .arg("pip")
         .arg("install")
@@ -114,7 +127,18 @@ fn ensure_midi_dependencies(python_path: &Path, _venv_dir: &Path) {
         .arg("mir-eval")
         .arg("mido")
         .arg("importlib-resources")
-        .output();
+        .output()
+        .map_err(|e| format!("Failed to run pip for MIDI dependencies: {}", e))?;
+
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        log::error!("pip install for MIDI dependencies failed: {}", stderr);
+        return Err(format!(
+            "Failed to install Basic Pitch (pip): {}",
+            stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("unknown error")
+        ));
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -173,7 +197,7 @@ pub async fn convert_audio_to_midi(
 
     let output = tauri::async_runtime::spawn_blocking(move || {
         // Ensure dependencies exist in background thread
-        ensure_midi_dependencies(&python_path, &venv_dir);
+        ensure_midi_dependencies(&python_path, &venv_dir)?;
 
         let mut cmd = std::process::Command::new(&python_path);
 
@@ -205,10 +229,10 @@ pub async fn convert_audio_to_midi(
         cmd.stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()
+            .map_err(|e| e.to_string())
     })
     .await
-    .map_err(|e| e.to_string())?
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_string())??;
 
     let stdout_str = String::from_utf8_lossy(&output.stdout);
     let stderr_str = String::from_utf8_lossy(&output.stderr);

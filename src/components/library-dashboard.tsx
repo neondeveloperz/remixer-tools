@@ -293,6 +293,7 @@ export function LibraryDashboard({
 
       if (isSuccess && midiPath) {
         const noteCount = res.note_count ?? res.noteCount ?? 0;
+        if (res.message) toast.warning("Basic Pitch unavailable, used fallback engine", { description: res.message });
         toast.success(`MIDI converted for ${fileName}!`, {
           description: `${noteCount} notes transcribed. Ready for VST instruments in your DAW.`,
           action: {
