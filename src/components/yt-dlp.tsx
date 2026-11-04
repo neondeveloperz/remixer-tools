@@ -78,6 +78,39 @@ function formatDuration(sec?: number): string {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
+export const FORMAT_LABELS: Record<string, string> = {
+  wav: "WAV (Lossless PCM)",
+  flac: "FLAC (Free Lossless Codec)",
+  alac: "ALAC (Apple Lossless)",
+  aiff: "AIFF (Uncompressed CDJ)",
+  mp3_meta: "MP3 (with Cover Art & Tags)",
+  mp3: "MP3 (Standard Clean)",
+  m4a: "M4A (Apple AAC + Meta)",
+  opus: "Opus (Highest Streaming Fidelity)",
+  aac: "AAC (Advanced Audio)",
+  ogg: "OGG (Ogg Vorbis)",
+  video: "MP4 (Universal H.264/AAC)",
+  mp4: "MP4 (Universal H.264/AAC)",
+  mkv: "MKV (Matroska High Definition)",
+  webm: "WebM (VP9/AV1 + Opus)",
+  mov: "MOV (Apple QuickTime)",
+};
+
+export const QUALITY_LABELS: Record<string, string> = {
+  best: "Best Quality Available",
+  "4320p": "8K Ultra HD (4320p)",
+  "2160p": "4K Ultra HD (2160p)",
+  "1440p": "2K Quad HD (1440p)",
+  "1080p": "Full HD (1080p 60fps)",
+  "720p": "HD (720p)",
+  "480p": "SD (480p)",
+  "360p": "Low (360p)",
+  "320K": "320 kbps (Extreme Quality)",
+  "256K": "256 kbps (High Quality)",
+  "192K": "192 kbps (Standard Quality)",
+  "128K": "128 kbps (Space Saver)",
+};
+
 export function YtDlp() {
   const player = usePlayer();
   const [url, setUrl] = useState("");
@@ -505,9 +538,12 @@ export function YtDlp() {
                   value={format}
                   onValueChange={(val) => { if (val) { setFormat(val); setQuality("best"); } }}
                   disabled={isCheckingInfo}
+                  items={FORMAT_LABELS}
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Format" />
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Format">
+                      {(val) => FORMAT_LABELS[val] || val || "Format"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-84">
                     <SelectGroup>
@@ -551,9 +587,14 @@ export function YtDlp() {
                   value={quality}
                   onValueChange={(val) => { if (val) setQuality(val); }}
                   disabled={isCheckingInfo}
+                  items={QUALITY_LABELS}
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Quality" />
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Quality">
+                      {(val) => (val === 'best' && ['wav', 'flac', 'alac', 'aiff'].includes(format))
+                        ? "Lossless (Source PCM)"
+                        : (QUALITY_LABELS[val] || val || "Quality")}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {['video', 'mp4', 'mkv', 'webm', 'mov'].includes(format) ? (

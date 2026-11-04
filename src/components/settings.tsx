@@ -35,6 +35,21 @@ import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTheme } from "@/components/theme-provider";
 import { toast } from "sonner";
+import { FORMAT_LABELS, QUALITY_LABELS } from "@/components/yt-dlp";
+
+const STEM_MODEL_LABELS: Record<string, string> = {
+  "htdemucs.yaml": "htdemucs (Standard 4-Stems: Vocals, Drums, Bass, Other)",
+  "htdemucs_6s.yaml": "htdemucs_6s (6-Stems: + Guitar, Piano)",
+  "UVR_MDXNET_KARA_2.onnx": "UVR MDX-Net Kara 2 (Vocals / Instrumental)",
+  "UVR-MDX-NET-Inst_HQ_3.onnx": "UVR MDX-Net Inst HQ 3 (High Fidelity)",
+  "Kim_Vocal_2.onnx": "Kim Vocal 2 (Ultra Clean Vocal Lead)",
+};
+
+const OVERLAP_LABELS: Record<string, string> = {
+  "2": "2 (Fast Processing - Good Quality)",
+  "4": "4 (Recommended - High Quality)",
+  "8": "8 (Maximum Quality - Slower)",
+};
 
 export interface AppSettings {
   download_dir: string;
@@ -285,9 +300,11 @@ export function Settings() {
                 <Label htmlFor="default-format" className="text-sm font-semibold">
                   Default Download Format
                 </Label>
-                <Select value={defaultFormat} onValueChange={(val) => val && setDefaultFormat(val)}>
+                <Select value={defaultFormat} onValueChange={(val) => val && setDefaultFormat(val)} items={FORMAT_LABELS}>
                   <SelectTrigger id="default-format">
-                    <SelectValue placeholder="Select format" />
+                    <SelectValue placeholder="Select format">
+                      {(val) => FORMAT_LABELS[val] || val || "Select format"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -330,9 +347,11 @@ export function Settings() {
                 <Label htmlFor="default-quality" className="text-sm font-semibold">
                   Default Quality Preset
                 </Label>
-                <Select value={defaultQuality} onValueChange={(val) => val && setDefaultQuality(val)}>
+                <Select value={defaultQuality} onValueChange={(val) => val && setDefaultQuality(val)} items={QUALITY_LABELS}>
                   <SelectTrigger id="default-quality">
-                    <SelectValue placeholder="Select quality" />
+                    <SelectValue placeholder="Select quality">
+                      {(val) => QUALITY_LABELS[val] || val || "Select quality"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -371,7 +390,9 @@ export function Settings() {
                   onValueChange={(val) => val && setMaxConcurrent(parseInt(val) || 2)}
                 >
                   <SelectTrigger id="max-concurrent">
-                    <SelectValue placeholder="Select concurrency" />
+                    <SelectValue placeholder="Select concurrency">
+                      {(val) => val ? `${val} Stream${val === '1' ? '' : 's'}` : "Select concurrency"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">1 Stream (Sequential - Low Bandwidth)</SelectItem>
@@ -442,7 +463,14 @@ export function Settings() {
                 </Label>
                 <Select value={defaultStemModel} onValueChange={(val) => val && setDefaultStemModel(val)}>
                   <SelectTrigger id="default-stem-model">
-                    <SelectValue placeholder="Select model" />
+                    <SelectValue placeholder="Select model">
+                      {(val) => {
+                        if (!val) return "Select model";
+                        if (STEM_MODEL_LABELS[val]) return STEM_MODEL_LABELS[val];
+                        const custom = installedModels.find(m => m.filename === val);
+                        return custom?.custom_name || val;
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -484,7 +512,9 @@ export function Settings() {
                 </Label>
                 <Select value={defaultStemFormat} onValueChange={(val) => val && setDefaultStemFormat(val)}>
                   <SelectTrigger id="default-stem-format">
-                    <SelectValue placeholder="Select output format" />
+                    <SelectValue placeholder="Select output format">
+                      {(val) => val ? `${val} (${val === 'FLAC' ? 'Lossless 24-bit' : val === 'WAV' ? 'Uncompressed 24-bit' : '320 kbps'})` : "Select output format"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="FLAC">FLAC (Lossless 24-bit - Recommended)</SelectItem>
@@ -502,9 +532,11 @@ export function Settings() {
                 <Label htmlFor="default-overlap" className="text-sm font-semibold">
                   Processing Chunk Overlap
                 </Label>
-                <Select value={defaultOverlap} onValueChange={(val) => val && setDefaultOverlap(val)}>
+                <Select value={defaultOverlap} onValueChange={(val) => val && setDefaultOverlap(val)} items={OVERLAP_LABELS}>
                   <SelectTrigger id="default-overlap">
-                    <SelectValue placeholder="Select overlap" />
+                    <SelectValue placeholder="Select overlap">
+                      {(val) => OVERLAP_LABELS[val] || val || "Select overlap"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2">2 (Fast Processing - Good Quality)</SelectItem>

@@ -681,14 +681,16 @@ export function StemExtractor({
               </div>
               <Select value={model} onValueChange={(val) => { if (val) handleModelChange(val); }} disabled={isExtracting}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select AI Model" />
+                  <SelectValue placeholder="Select AI Model">
+                    {(val) => modelOptions.find(o => o.value === val)?.label || val || "Select AI Model"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent
                   side="bottom"
                   align="start"
                   alignItemWithTrigger={false}
                   sideOffset={6}
-                  className="w-(--anchor-width) min-w-[340px] max-h-80 p-1.5 shadow-xl border border-border/80"
+                  className="min-w-[340px] w-max max-w-md max-h-80 p-1.5 shadow-xl border border-border/80"
                 >
                   {Object.entries(groupedModelOptions).map(([groupName, items], idx) => (
                     <SelectGroup key={groupName}>
@@ -732,7 +734,9 @@ export function StemExtractor({
               <Label>Overlap</Label>
               <Select value={overlap} onValueChange={(val) => { if (val) setOverlap(val); }} disabled={isExtracting}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Overlap" />
+                  <SelectValue placeholder="Overlap">
+                    {(val) => val ? `${val} (${val === '2' ? 'Fast' : val === '4' ? 'Balanced' : 'High Quality'})` : "Overlap"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="2">2 (Fast / Low RAM)</SelectItem>
@@ -748,7 +752,9 @@ export function StemExtractor({
               <Label>Segment</Label>
               <Select value={segmentSize} onValueChange={(val) => { if (val) setSegmentSize(val); }} disabled={isExtracting}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Segment" />
+                  <SelectValue placeholder="Segment">
+                    {(val) => val ? `${val} (${val === '128' ? 'Low RAM' : val === '256' ? 'Balanced' : 'High Quality'})` : "Segment"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="128">128 (Ultra Low RAM)</SelectItem>
