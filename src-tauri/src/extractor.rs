@@ -25,6 +25,15 @@ use crate::storage::get_storage_dirs_internal;
 use crate::ai_models::get_models_dir;
 use crate::downloader::{CommandExtForWindows, download_file_with_progress};
 
+/// Lines from a child process pipe. Non-UTF-8 output (e.g. a Thai Windows code page) is decoded
+/// lossily instead of being dropped, and iteration stops on the first I/O error instead of retrying it.
+fn lossy_lines<R: BufRead>(reader: R) -> impl Iterator<Item = String> {
+    reader.split(b'\n').map_while(Result::ok).map(|bytes| {
+        let line = bytes.strip_suffix(b"\r").unwrap_or(&bytes);
+        String::from_utf8_lossy(line).into_owned()
+    })
+}
+
 #[tauri::command]
 pub async fn reset_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
     cancel_stem_extractor();
@@ -205,7 +214,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 let app_torch = app.clone();
                 std::thread::spawn(move || {
                     let reader = BufReader::new(stdout_torch);
-                    for line in reader.lines().flatten() {
+                    for line in lossy_lines(reader) {
                         let _ = app_torch.emit("stem-log", line);
                     }
                 });
@@ -213,7 +222,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 let app_torch_err = app.clone();
                 std::thread::spawn(move || {
                     let reader = BufReader::new(stderr_torch);
-                    for line in reader.lines().flatten() {
+                    for line in lossy_lines(reader) {
                         let _ = app_torch_err.emit("stem-log", line);
                     }
                 });
@@ -243,7 +252,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                     let app_fb = app.clone();
                     std::thread::spawn(move || {
                         let reader = BufReader::new(stdout_fb);
-                        for line in reader.lines().flatten() {
+                        for line in lossy_lines(reader) {
                             let _ = app_fb.emit("stem-log", line);
                         }
                     });
@@ -251,7 +260,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                     let app_fb_err = app.clone();
                     std::thread::spawn(move || {
                         let reader = BufReader::new(stderr_fb);
-                        for line in reader.lines().flatten() {
+                        for line in lossy_lines(reader) {
                             let _ = app_fb_err.emit("stem-log", line);
                         }
                     });
@@ -281,7 +290,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 let app_torch = app.clone();
                 std::thread::spawn(move || {
                     let reader = BufReader::new(stdout_torch);
-                    for line in reader.lines().flatten() {
+                    for line in lossy_lines(reader) {
                         let _ = app_torch.emit("stem-log", line);
                     }
                 });
@@ -289,7 +298,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 let app_torch_err = app.clone();
                 std::thread::spawn(move || {
                     let reader = BufReader::new(stderr_torch);
-                    for line in reader.lines().flatten() {
+                    for line in lossy_lines(reader) {
                         let _ = app_torch_err.emit("stem-log", line);
                     }
                 });
@@ -351,7 +360,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         let app_clone = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for line in reader.lines().flatten() {
+            for line in lossy_lines(reader) {
                 let _ = app_clone.emit("stem-log", line);
             }
         });
@@ -359,7 +368,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
         let app_clone_err = app.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines().flatten() {
+            for line in lossy_lines(reader) {
                 let _ = app_clone_err.emit("stem-log", line);
             }
         });
