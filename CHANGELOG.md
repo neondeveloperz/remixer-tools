@@ -1,9 +1,9 @@
 # Changelog
 
-## 🚀 What's New in v1.3.2
+## 🚀 What's New in v1.3.3
 - **Auto-Update Now Works:**
   - Releases now include signed updater files (`latest.json` + signatures). Previously the update check always failed with a 404, so installed apps never saw new versions. From this release on, the app can find, download, and install updates by itself.
-  - The updater signing key was replaced. **If you are on v1.3.1 or older, download and install v1.3.2 manually once** (an in-app update from older versions will fail the signature check). Later updates install automatically.
+  - The updater signing key was replaced. **If you are on v1.3.1 or older, download and install v1.3.3 manually once** (an in-app update from older versions will fail the signature check). Later updates install automatically.
   - macOS releases now also ship the updater package, so Mac users get automatic updates too.
 
 ## 🚀 What's New in v1.3.1
