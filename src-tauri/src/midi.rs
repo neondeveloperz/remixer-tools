@@ -86,8 +86,11 @@ fn ensure_midi_dependencies(python_path: &Path, venv_dir: &Path) -> Result<(), S
     Ok(())
 }
 
-fn check_or_install_midi_dependencies(python_path: &Path, _venv_dir: &Path) -> Result<(), String> {
-    // Quick check if basic_pitch and pretty_midi are importable
+/// Imports everything audio_to_midi.py needs. `basic_pitch.inference` fails (NameError
+/// `_default_model_type`) when no ONNX/TF backend is installed, and librosa/onnxruntime come from
+/// the STEM Extractor environment, so a half-installed venv is caught here instead of mid-conversion.
+/// Returns the last stderr line on failure.
+fn midi_imports_ok(python_path: &Path) -> Result<(), String> {
     let mut check_cmd = std::process::Command::new(python_path);
     #[cfg(target_os = "windows")]
     {
@@ -95,18 +98,27 @@ fn check_or_install_midi_dependencies(python_path: &Path, _venv_dir: &Path) -> R
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         check_cmd.creation_flags(CREATE_NO_WINDOW);
     }
-
-    let check = check_cmd
+    let out = check_cmd
         .arg("-c")
-        .arg("import basic_pitch, pretty_midi, importlib_resources")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
+        .arg("import librosa, pretty_midi, importlib_resources, basic_pitch.inference")
+        .output()
+        .map_err(|e| e.to_string())?;
+    if out.status.success() {
+        return Ok(());
+    }
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    Err(stderr
+        .lines()
+        .rev()
+        .find(|l| !l.trim().is_empty())
+        .unwrap_or("unknown import error")
+        .trim()
+        .to_string())
+}
 
-    if let Ok(status) = check {
-        if status.success() {
-            return Ok(());
-        }
+fn check_or_install_midi_dependencies(python_path: &Path, _venv_dir: &Path) -> Result<(), String> {
+    if midi_imports_ok(python_path).is_ok() {
+        return Ok(());
     }
 
     // Install missing dependencies via python -m pip to avoid shebang path length limits on Unix
@@ -138,7 +150,16 @@ fn check_or_install_midi_dependencies(python_path: &Path, _venv_dir: &Path) -> R
             stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("unknown error")
         ));
     }
-    Ok(())
+
+    // pip only adds the MIDI packages (--no-deps); the heavy shared ones (librosa, ONNX Runtime)
+    // belong to the STEM Extractor environment and must be repaired there.
+    midi_imports_ok(python_path).map_err(|detail| {
+        log::error!("MIDI environment incomplete after install: {}", detail);
+        format!(
+            "The AI environment is incomplete ({}). Open Settings → Storage & Appearance, click Repair next to STEM Extractor, then try again.",
+            detail
+        )
+    })
 }
 
 #[tauri::command]
