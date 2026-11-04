@@ -16,7 +16,7 @@ export function Help() {
     <div className="space-y-6 mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Help & Documentation</CardTitle>
+          <CardTitle>Help &amp; Documentation</CardTitle>
           <CardDescription>Learn how to use Remixer Tools and troubleshoot common issues.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -41,9 +41,9 @@ export function Help() {
             </AccordionItem>
 
             <AccordionItem value="item-3">
-              <AccordionTrigger>How do I manage my past downloads & separated stems?</AccordionTrigger>
+              <AccordionTrigger>How do I manage my past downloads &amp; separated stems?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">
-                <p>Navigate to the <strong>History & Library</strong> tab. This dashboard automatically catalogs all your downloaded media and AI-separated stems.</p>
+                <p>Navigate to the <strong>History &amp; Library</strong> tab. This dashboard automatically catalogs all your downloaded media and AI-separated stems.</p>
                 <p>From here, you can search, filter, delete files, or instantly load separated stems into the <strong>STEM Mixer Studio</strong> with a single click.</p>
               </AccordionContent>
             </AccordionItem>
@@ -60,7 +60,7 @@ export function Help() {
               <AccordionTrigger>How do I update Remixer Tools to the latest version?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">
                 <p>Remixer Tools features a <strong>Built-in Auto Updater</strong>. Every time you open the application, it will seamlessly check for a new release.</p>
-                <p>If an update is available, a prompt will appear showing the release notes. Just click "Download & Install" and the app will handle the rest!</p>
+                <p>If an update is available, a prompt will appear showing the release notes. Just click "Download &amp; Install" and the app will handle the rest!</p>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
