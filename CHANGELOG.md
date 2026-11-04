@@ -1,5 +1,9 @@
 # Changelog
 
+## 🚀 What's New in v1.3.2
+- **Auto-Update Now Works:**
+  - Releases now include signed updater files (`latest.json` + signatures). Previously the update check always failed with a 404, so installed apps never saw new versions. From this release on, the app can find, download, and install updates by itself.
+
 ## 🚀 What's New in v1.3.1
 - **Media Tools (Settings → Storage & Appearance):**
   - New "Check & Update" button for yt-dlp: checks GitHub and installs the newest version automatically (verified against the release checksums).
