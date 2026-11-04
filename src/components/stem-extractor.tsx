@@ -35,8 +35,11 @@ import {
   Clock,
   Layers,
   X,
-  Play
+  Play,
+  Copy,
+  Terminal
 } from "lucide-react";
+import { toast } from "sonner";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -211,6 +214,14 @@ export function StemExtractor({
   const [lowMemory, setLowMemory] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractLog, setExtractLog] = useState<string[]>([]);
+  const [copiedLog, setCopiedLog] = useState<string | null>(null);
+
+  const handleCopyLog = (text: string, id: string = "extract") => {
+    navigator.clipboard.writeText(text);
+    setCopiedLog(id);
+    toast.success("Log copied to clipboard");
+    setTimeout(() => setCopiedLog(null), 2000);
+  };
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   // Initialize defaults from global settings
@@ -591,8 +602,34 @@ export function StemExtractor({
                 ))}
               </div>
             )}
-            <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap flex flex-col">
-              {setupLog.map((log, i) => <div key={i}>{log}</div>)}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                <span className="font-medium flex items-center gap-1.5 text-foreground">
+                  <Terminal className="w-3.5 h-3.5 text-primary" /> Setup Log
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5 text-xs gap-1.5"
+                  onClick={() => handleCopyLog(setupLog.join("\n"), "setup")}
+                >
+                  {copiedLog === "setup" ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Log</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap flex flex-col">
+                {setupLog.map((log, i) => <div key={i}>{log}</div>)}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -619,7 +656,31 @@ export function StemExtractor({
           </div>
           <CardDescription>Could not initialize the STEM Extractor environment. You can retry or reinstall the environment below.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span className="font-medium flex items-center gap-1.5 text-destructive">
+              <Terminal className="w-3.5 h-3.5" /> Error Log
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => handleCopyLog(setupLog.join("\n"), "setup-err")}
+            >
+              {copiedLog === "setup-err" ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Log</span>
+                </>
+              )}
+            </Button>
+          </div>
           <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto font-mono text-sm whitespace-pre-wrap text-destructive">
             {setupLog.map((log, i) => <div key={i}>{log}</div>)}
           </div>
@@ -1008,8 +1069,45 @@ export function StemExtractor({
           )}
 
           {extractLog.length > 0 && (
-            <div className="bg-muted p-4 rounded-md h-60 overflow-y-auto font-mono text-xs whitespace-pre-wrap flex flex-col">
-              {extractLog.map((log, i) => <div key={i}>{log}</div>)}
+            <div className="space-y-2 mt-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                <span className="font-medium flex items-center gap-1.5 text-foreground">
+                  <Terminal className="w-3.5 h-3.5 text-primary" /> Extraction Log
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2.5 text-xs gap-1.5"
+                    onClick={() => handleCopyLog(extractLog.join("\n"), "extract")}
+                  >
+                    {copiedLog === "extract" ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Log</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setExtractLog([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              <div className="bg-muted p-4 rounded-md h-60 overflow-y-auto font-mono text-xs whitespace-pre-wrap flex flex-col">
+                {extractLog.map((log, i) => <div key={i}>{log}</div>)}
+              </div>
             </div>
           )}
         </CardContent>

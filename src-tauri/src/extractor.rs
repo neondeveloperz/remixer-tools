@@ -194,7 +194,7 @@ pub async fn setup_stem_extractor(app: tauri::AppHandle) -> Result<(), String> {
                 .arg("torch")
                 .arg("torchvision")
                 .arg("torchaudio")
-                .arg("--extra-index-url")
+                .arg("--index-url")
                 .arg("https://download.pytorch.org/whl/cu124")
                 .arg("--prefer-binary");
 
@@ -562,21 +562,20 @@ fn sanitize_folder_name(name: &str) -> String {
             cmd.arg("--demucs_overlap").arg(overlap_float);
             cmd.arg("--mdxc_overlap").arg(overlap_val);
 
-            // In Demucs, shifts = number of full repeated passes with random shifts.
-            // Do NOT use overlap_val directly for shifts, as 4 or 6 shifts multiplies Demucs RAM 4x!
+            // In Demucs, shifts = number of extra random shift passes.
+            // 0 = fastest (1 single pass), 1 = balanced (2 passes). Avoid 2+ on CPU or low VRAM.
             let shifts = if is_low_mem {
-                "1"
+                "0"
             } else {
                 match overlap_val.as_str() {
-                    "2" => "1",
-                    "4" => "2",
-                    "6" | "8" | "10" => "2",
-                    _ => "2",
+                    "2" => "0",
+                    "4" => "1",
+                    _ => "1",
                 }
             };
             cmd.arg("--demucs_shifts").arg(shifts);
         } else {
-            let shifts = if is_low_mem { "1" } else { "2" };
+            let shifts = if is_low_mem { "0" } else { "1" };
             cmd.arg("--demucs_shifts").arg(shifts);
         }
 
@@ -592,14 +591,14 @@ fn sanitize_folder_name(name: &str) -> String {
             // Blindly passing 256 or 512 caused Demucs to allocate 4-8.5 minute tensors in RAM at once!
             if is_demucs {
                 if is_low_mem {
-                    cmd.arg("--demucs_segment_size").arg("20");
+                    cmd.arg("--demucs_segment_size").arg("40");
                 } else {
                     cmd.arg("--demucs_segment_size").arg("Default");
                 }
             }
         } else if is_demucs {
             if is_low_mem {
-                cmd.arg("--demucs_segment_size").arg("20");
+                cmd.arg("--demucs_segment_size").arg("40");
             } else {
                 cmd.arg("--demucs_segment_size").arg("Default");
             }
