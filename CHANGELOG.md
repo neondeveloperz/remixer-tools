@@ -1,5 +1,19 @@
 # Changelog
 
+## 🚀 What's New in v1.3.0
+- **Single Instance & Window State:**
+  - Launching the app again now focuses the running window instead of opening a second instance that would race on the shared Python environment, settings, and output folders.
+  - Window size, position, and maximized state are remembered across launches. If a saved position would leave the title bar off-screen (e.g. after unplugging a monitor) or the window is larger than the current display, it is recentered on the primary monitor.
+  - Debug Panel now shows the real OS, version, and CPU architecture for bug reports.
+- **MIDI Extraction Quality & Speed:**
+  - Default "Balanced" sensitivity now uses Basic Pitch's own thresholds, roughly halving ghost notes; "Clean" is stricter.
+  - The short/weak-note noise gate now runs on raw velocities, so it actually removes blips instead of being masked by velocity remapping.
+  - BPM/beat analysis uses the first 30 seconds, making conversions about 20% faster.
+  - Basic Pitch install failures are reported instead of silently falling back, and a warning is shown whenever the monophonic fallback engine is used.
+- **Fixes & Security:**
+  - STEM Extractor logs no longer drop lines with non-UTF-8 output (e.g. Thai Windows code pages).
+  - Patched high-severity advisories by upgrading `zod` and `vite`, and moved the `shadcn` CLI to dev dependencies so it is no longer part of the shipped dependency tree.
+
 ## 🚀 What's New in v1.2.1
 - **STEM Extractor Improvements & GPU Acceleration:**
   - Added "Copy Log" and "Clear" toolbar buttons to easily copy extraction logs and environment setup/error logs to clipboard.
