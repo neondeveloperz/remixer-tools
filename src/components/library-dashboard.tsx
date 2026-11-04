@@ -33,11 +33,12 @@ import {
   ChevronRight,
   Piano,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlayer, type TrackInfo } from "@/contexts/PlayerContext";
 import { extractStemName } from "@/lib/utils";
-import { MidiVisualizerDialog } from "@/components/midi-visualizer";
+import { MidiVisualizer } from "@/components/midi-visualizer";
 
 export interface StorageFileItem {
   name: string;
@@ -448,6 +449,40 @@ export function LibraryDashboard({
   const paginatedFiles = !isGroupView
     ? filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
     : [];
+
+  if (viewingMidi) {
+    return (
+      <div className="space-y-4 animate-in fade-in duration-200">
+        <div className="flex items-center justify-between pb-2 border-b">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewingMidi(null)}
+            className="gap-2 font-medium -ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to History & Library
+          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="font-mono text-xs text-amber-500 border-amber-500/30 bg-amber-500/10">
+              <Piano className="h-3.5 w-3.5 mr-1" /> MIDI Piano Roll
+            </Badge>
+            <span className="text-sm font-semibold text-foreground truncate max-w-sm sm:max-w-md">
+              {viewingMidi.name}
+            </span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden h-[calc(100vh-190px)] min-h-[600px] flex flex-col">
+          <MidiVisualizer
+            filePath={viewingMidi.path}
+            fileName={viewingMidi.name}
+            onClose={() => setViewingMidi(null)}
+            className="h-full flex-1 border-0 rounded-none shadow-none"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 mx-auto pb-12">
@@ -1035,15 +1070,7 @@ export function LibraryDashboard({
         </div>
       )}
 
-      {/* Pop-up Dialog for Viewing MIDI Piano Roll */}
-      {viewingMidi && (
-        <MidiVisualizerDialog
-          open={Boolean(viewingMidi)}
-          onOpenChange={(open) => !open && setViewingMidi(null)}
-          filePath={viewingMidi.path}
-          fileName={viewingMidi.name}
-        />
-      )}
+
     </div>
   );
 }

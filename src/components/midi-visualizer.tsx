@@ -1741,7 +1741,7 @@ export function MidiVisualizerDialog({
 }: MidiVisualizerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[92vh] max-h-[92vh] p-0 overflow-hidden bg-card border shadow-2xl flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-[95vw] w-[95vw] h-[92vh] max-h-[92vh] p-0 overflow-hidden bg-card border shadow-2xl flex flex-col">
         <DialogHeader className="sr-only">
           <DialogTitle>MIDI Piano Roll Visualizer</DialogTitle>
           <DialogDescription>Interactive MIDI note visualizer and synthesizer</DialogDescription>
