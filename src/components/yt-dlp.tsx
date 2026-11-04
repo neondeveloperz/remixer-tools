@@ -474,6 +474,7 @@ export function YtDlp() {
                   <SelectContent>
                     <SelectItem value="mp3_meta">Audio (MP3 with Meta)</SelectItem>
                     <SelectItem value="mp3">Audio (MP3 Clean)</SelectItem>
+                    <SelectItem value="wav">Audio (WAV Lossless)</SelectItem>
                     <SelectItem value="video">Video (MP4)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -497,6 +498,10 @@ export function YtDlp() {
                         <SelectItem value="1080p">1080p</SelectItem>
                         <SelectItem value="720p">720p</SelectItem>
                         <SelectItem value="480p">480p</SelectItem>
+                      </>
+                    ) : format === "wav" ? (
+                      <>
+                        <SelectItem value="best">Lossless (Source PCM)</SelectItem>
                       </>
                     ) : (
                       <>
@@ -726,7 +731,9 @@ export function YtDlp() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="truncate">
                         <span className="bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5 rounded-full mr-2">
-                          {item.quality === 'best' ? 'Best' : item.quality} {item.format === 'mp3_meta' ? 'MP3 + Meta' : item.format.toUpperCase()}
+                          {item.format === 'wav'
+                            ? 'WAV Lossless'
+                            : `${item.quality === 'best' ? 'Best' : item.quality} ${item.format === 'mp3_meta' ? 'MP3 + Meta' : item.format.toUpperCase()}`}
                         </span>
                         <span className="font-medium text-sm truncate">{item.title}</span>
                       </div>

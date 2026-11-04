@@ -420,6 +420,10 @@ pub async fn run_ytdlp(
                 cmd.arg("--convert-thumbnails").arg("jpg");
                 cmd.arg("--parse-metadata").arg("%(title)s:%(artist)s - %(title)s");
             }
+        } else if format_clone == "wav" {
+            cmd.arg("-f").arg("bestaudio/best");
+            cmd.arg("-x").arg("--audio-format").arg("wav");
+            cmd.arg("--audio-quality").arg("0");
         } else {
             // Video format
             if quality_clone == "best" {
