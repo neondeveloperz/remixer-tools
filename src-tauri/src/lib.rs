@@ -143,6 +143,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             run_ytdlp,
+            get_tool_versions,
+            update_ytdlp,
+            list_ffmpeg_versions,
+            install_ffmpeg,
             get_download_dir,
             open_download_folder,
             set_download_dir,

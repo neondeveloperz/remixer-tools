@@ -90,6 +90,11 @@ impl CommandExtForWindows for std::process::Command {
     }
 }
 
+/// yt-dlp writes stdout in the locale code page (cp1252 on English Windows) and silently drops
+/// characters it cannot encode, so Thai/CJK titles came back as "  .mp3" and every such download
+/// was reported under the same broken path. Force UTF-8 on every call whose output we parse.
+const YTDLP_UTF8: [&str; 2] = ["--encoding", "utf-8"];
+
 #[derive(Serialize, Deserialize)]
 #[allow(dead_code)]
 struct VideoInfo {
@@ -114,6 +119,7 @@ pub async fn get_video_info(app: tauri::AppHandle, url: String) -> Result<String
 
     let output = std::process::Command::new(&ytdlp_path)
         .hide_window()
+        .args(YTDLP_UTF8)
         .arg("--dump-json")
         .arg("--no-warnings")
         .arg(&url)
@@ -140,6 +146,7 @@ pub async fn get_playlist_info(app: tauri::AppHandle, url: String) -> Result<Str
 
     let output = std::process::Command::new(&ytdlp_path)
         .hide_window()
+        .args(YTDLP_UTF8)
         .arg("--flat-playlist")
         .arg("--dump-single-json")
         .arg("--no-warnings")
@@ -346,6 +353,238 @@ pub async fn setup_dependencies(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+fn tool_path(app_dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+    if cfg!(target_os = "windows") {
+        app_dir.join(format!("{}.exe", name))
+    } else {
+        app_dir.join(name)
+    }
+}
+
+/// Runs `<tool> <arg>` and returns the first non-empty output line.
+fn tool_output_line(path: &std::path::Path, arg: &str) -> Option<String> {
+    if !path.exists() {
+        return None;
+    }
+    let out = std::process::Command::new(path).hide_window().arg(arg).output().ok()?;
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .map(str::to_string)
+}
+
+#[derive(Serialize)]
+pub struct ToolVersions {
+    pub ytdlp: Option<String>,
+    pub ffmpeg: Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_tool_versions(app: tauri::AppHandle) -> Result<ToolVersions, String> {
+    let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let ffmpeg = tool_output_line(&tool_path(&app_dir, "ffmpeg"), "-version").map(|l| {
+        // "ffmpeg version N-127900-ge2798d5cad-20261021 Copyright ..." -> "N-127900-ge2798d5cad-20261021"
+        l.strip_prefix("ffmpeg version ")
+            .and_then(|r| r.split_whitespace().next())
+            .unwrap_or(&l)
+            .to_string()
+    });
+    Ok(ToolVersions {
+        ytdlp: tool_output_line(&tool_path(&app_dir, "yt-dlp"), "--version"),
+        ffmpeg,
+    })
+}
+
+/// Checks GitHub for a newer yt-dlp and installs it if found. `yt-dlp -U` verifies the
+/// download against the release's SHA2-256SUMS and swaps the binary itself.
+#[tauri::command]
+pub async fn update_ytdlp(app: tauri::AppHandle) -> Result<String, String> {
+    let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let path = tool_path(&app_dir, "yt-dlp");
+    if !path.exists() {
+        return Err("yt-dlp is not installed yet. Restart the app to run the initial setup.".into());
+    }
+    let out = tauri::async_runtime::spawn_blocking(move || {
+        std::process::Command::new(&path).hide_window().arg("-U").output()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
+
+    let text = format!(
+        "{}\n{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    // Last line is the summary: "Updated yt-dlp to ..." or "yt-dlp is up to date (...)"
+    let summary = text
+        .lines()
+        .map(str::trim)
+        .rfind(|l| !l.is_empty())
+        .unwrap_or("No output from yt-dlp")
+        .to_string();
+    if out.status.success() {
+        log::info!("yt-dlp -U: {}", summary);
+        Ok(summary)
+    } else {
+        log::error!("yt-dlp -U failed: {}", text);
+        Err(summary)
+    }
+}
+
+#[derive(Deserialize)]
+struct GhAsset {
+    name: String,
+    browser_download_url: String,
+}
+
+#[derive(Deserialize)]
+struct GhRelease {
+    tag_name: String,
+    assets: Vec<GhAsset>,
+}
+
+enum FfmpegSource {
+    /// Windows: BtbN zip containing bin/ffmpeg.exe and bin/ffprobe.exe
+    Zip(String),
+    /// macOS/Linux: separate ffmpeg and ffprobe binaries from eugeneware/ffmpeg-static
+    Pair { ffmpeg: String, ffprobe: String },
+}
+
+/// "ffmpeg-master-latest-win64-gpl.zip" -> "master", "ffmpeg-n9.0-latest-win64-gpl-9.0.zip" -> "n9.0".
+/// Rejects shared-library and non-win64 builds.
+fn btbn_version_id(asset_name: &str) -> Option<String> {
+    let rest = asset_name.strip_prefix("ffmpeg-")?;
+    let (id, tail) = rest.split_once("-latest-win64-gpl")?;
+    if !tail.ends_with(".zip") || tail.contains("shared") || id.is_empty() {
+        return None;
+    }
+    Some(id.to_string())
+}
+
+async fn fetch_github<T: serde::de::DeserializeOwned>(url: &str) -> Result<T, String> {
+    reqwest::Client::builder()
+        .user_agent("remixer-tools")
+        .build()
+        .map_err(|e| e.to_string())?
+        .get(url)
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| format!("GitHub API error: {}", e))?
+        .json::<T>()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Installable FFmpeg builds for this platform, newest first. Only builds that ship both
+/// ffmpeg and ffprobe are listed so the pair never ends up on mismatched versions.
+async fn ffmpeg_sources() -> Result<Vec<(String, FfmpegSource)>, String> {
+    if cfg!(target_os = "windows") {
+        let rel: GhRelease =
+            fetch_github("https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest").await?;
+        let mut sources: Vec<_> = rel
+            .assets
+            .into_iter()
+            .filter_map(|a| btbn_version_id(&a.name).map(|id| (id, FfmpegSource::Zip(a.browser_download_url))))
+            .collect();
+        // "master" first, then release branches newest first ("n9.0" before "n8.1")
+        sources.sort_by_key(|(id, _)| {
+            let ver: Vec<u32> = id.trim_start_matches('n').split('.').filter_map(|p| p.parse().ok()).collect();
+            std::cmp::Reverse(if id == "master" { vec![u32::MAX] } else { ver })
+        });
+        return Ok(sources);
+    }
+
+    let os = if cfg!(target_os = "macos") { "darwin" } else { "linux" };
+    let arch = if cfg!(target_arch = "aarch64") { "arm64" } else { "x64" };
+    let releases: Vec<GhRelease> =
+        fetch_github("https://api.github.com/repos/eugeneware/ffmpeg-static/releases?per_page=30").await?;
+    let find = |rel: &GhRelease, name: String| {
+        rel.assets.iter().find(|a| a.name == name).map(|a| a.browser_download_url.clone())
+    };
+    Ok(releases
+        .iter()
+        .filter_map(|rel| {
+            let ffmpeg = find(rel, format!("ffmpeg-{}-{}", os, arch))?;
+            let ffprobe = find(rel, format!("ffprobe-{}-{}", os, arch))?;
+            Some((rel.tag_name.clone(), FfmpegSource::Pair { ffmpeg, ffprobe }))
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn list_ffmpeg_versions() -> Result<Vec<String>, String> {
+    Ok(ffmpeg_sources().await?.into_iter().map(|(id, _)| id).collect())
+}
+
+/// Writes next to the target and renames over it, so a failed or interrupted install never
+/// leaves a truncated binary behind.
+fn replace_binary(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    let tmp = path.with_extension("download");
+    std::fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    {
+        let mut perms = std::fs::metadata(&tmp).map_err(|e| e.to_string())?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&tmp, perms).map_err(|e| e.to_string())?;
+    }
+    std::fs::rename(&tmp, path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        format!(
+            "Could not replace {} ({}). Wait for running downloads/extractions to finish and try again.",
+            path.file_name().unwrap_or_default().to_string_lossy(),
+            e
+        )
+    })
+}
+
+#[tauri::command]
+pub async fn install_ffmpeg(app: tauri::AppHandle, version: String) -> Result<String, String> {
+    let app_dir = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| e.to_string())?;
+
+    // Resolving the id against the live release list is also the input validation:
+    // only URLs GitHub itself returned are ever downloaded.
+    let source = ffmpeg_sources()
+        .await?
+        .into_iter()
+        .find(|(id, _)| *id == version)
+        .map(|(_, s)| s)
+        .ok_or_else(|| format!("FFmpeg version '{}' is not available for this platform", version))?;
+
+    let (ffmpeg_bytes, ffprobe_bytes) = match source {
+        FfmpegSource::Zip(url) => {
+            let zip = download_file_with_progress(&app, &url, "ffmpeg").await?;
+            let mut archive = ZipArchive::new(Cursor::new(zip)).map_err(|e| e.to_string())?;
+            let mut extract = |suffix: &str| -> Result<Vec<u8>, String> {
+                let idx = (0..archive.len())
+                    .find(|&i| archive.by_index(i).map(|f| f.name().ends_with(suffix)).unwrap_or(false))
+                    .ok_or_else(|| format!("{} not found in archive", suffix))?;
+                let mut buf = Vec::new();
+                std::io::copy(&mut archive.by_index(idx).map_err(|e| e.to_string())?, &mut buf)
+                    .map_err(|e| e.to_string())?;
+                Ok(buf)
+            };
+            (extract("/ffmpeg.exe")?, extract("/ffprobe.exe")?)
+        }
+        FfmpegSource::Pair { ffmpeg, ffprobe } => (
+            download_file_with_progress(&app, &ffmpeg, "ffmpeg").await?,
+            download_file_with_progress(&app, &ffprobe, "ffprobe").await?,
+        ),
+    };
+
+    replace_binary(&tool_path(&app_dir, "ffmpeg"), &ffmpeg_bytes)?;
+    replace_binary(&tool_path(&app_dir, "ffprobe"), &ffprobe_bytes)?;
+    log::info!("Installed FFmpeg {}", version);
+
+    Ok(get_tool_versions(app).await?.ffmpeg.unwrap_or(version))
+}
+
+
 #[tauri::command]
 pub async fn run_ytdlp(
     app: tauri::AppHandle,
@@ -388,6 +627,7 @@ pub async fn run_ytdlp(
         // Use JSON progress template for easier frontend parsing
         let progress_template = r#"{"progress": "%(progress._percent_str)s", "speed": "%(progress._speed_str)s", "eta": "%(progress._eta_str)s", "downloaded": "%(progress._downloaded_bytes_str)s", "total": "%(progress._total_bytes_str)s"}"#;
 
+        cmd.args(YTDLP_UTF8);
         cmd.arg("--newline");
         cmd.arg("--progress-template").arg(progress_template);
 
@@ -586,4 +826,36 @@ pub async fn run_ytdlp(
     });
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::btbn_version_id;
+
+    #[test]
+    fn parses_btbn_asset_names() {
+        assert_eq!(btbn_version_id("ffmpeg-master-latest-win64-gpl.zip").as_deref(), Some("master"));
+        assert_eq!(btbn_version_id("ffmpeg-n9.0-latest-win64-gpl-9.0.zip").as_deref(), Some("n9.0"));
+        assert_eq!(btbn_version_id("ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip"), None);
+        assert_eq!(btbn_version_id("ffmpeg-n9.0-latest-win64-lgpl-9.0.zip"), None);
+        assert_eq!(btbn_version_id("ffmpeg-master-latest-linux64-gpl.tar.xz"), None);
+        assert_eq!(btbn_version_id("checksums.sha256"), None);
+    }
+
+    /// Hits the live GitHub API; run with `cargo test -- --ignored`.
+    #[test]
+    #[ignore]
+    fn lists_ffmpeg_versions_from_github() {
+        let sources = tauri::async_runtime::block_on(super::ffmpeg_sources()).expect("GitHub API reachable");
+        let ids: Vec<&str> = sources.iter().map(|(id, _)| id.as_str()).collect();
+        println!("ffmpeg versions: {:?}", ids);
+        assert!(!ids.is_empty());
+        for (_, src) in &sources {
+            let urls = match src {
+                super::FfmpegSource::Zip(u) => vec![u],
+                super::FfmpegSource::Pair { ffmpeg, ffprobe } => vec![ffmpeg, ffprobe],
+            };
+            assert!(urls.iter().all(|u| u.starts_with("https://github.com/")));
+        }
+    }
 }

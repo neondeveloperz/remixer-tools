@@ -101,6 +101,50 @@ export function Settings() {
   const [updateStatus, setUpdateStatus] = useState<string>("");
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isRepairingStem, setIsRepairingStem] = useState(false);
+  const [toolVersions, setToolVersions] = useState<{ ytdlp: string | null; ffmpeg: string | null }>({ ytdlp: null, ffmpeg: null });
+  const [isUpdatingYtdlp, setIsUpdatingYtdlp] = useState(false);
+  const [ffmpegVersions, setFfmpegVersions] = useState<string[]>([]);
+  const [selectedFfmpeg, setSelectedFfmpeg] = useState<string>("");
+  const [isInstallingFfmpeg, setIsInstallingFfmpeg] = useState(false);
+
+  useEffect(() => {
+    invoke<{ ytdlp: string | null; ffmpeg: string | null }>("get_tool_versions")
+      .then(setToolVersions)
+      .catch((e) => console.warn("get_tool_versions failed:", e));
+    invoke<string[]>("list_ffmpeg_versions")
+      .then((versions) => {
+        setFfmpegVersions(versions);
+        if (versions.length > 0) setSelectedFfmpeg(versions[0]);
+      })
+      .catch((e) => console.warn("list_ffmpeg_versions failed:", e));
+  }, []);
+
+  const updateYtdlp = async () => {
+    try {
+      setIsUpdatingYtdlp(true);
+      const summary = await invoke<string>("update_ytdlp");
+      toast.success("yt-dlp", { description: summary });
+      setToolVersions(await invoke("get_tool_versions"));
+    } catch (e) {
+      toast.error("yt-dlp update failed", { description: String(e) });
+    } finally {
+      setIsUpdatingYtdlp(false);
+    }
+  };
+
+  const installFfmpeg = async () => {
+    if (!selectedFfmpeg) return;
+    try {
+      setIsInstallingFfmpeg(true);
+      const installed = await invoke<string>("install_ffmpeg", { version: selectedFfmpeg });
+      toast.success("FFmpeg installed", { description: installed });
+      setToolVersions((prev) => ({ ...prev, ffmpeg: installed }));
+    } catch (e) {
+      toast.error("FFmpeg install failed", { description: String(e) });
+    } finally {
+      setIsInstallingFfmpeg(false);
+    }
+  };
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -560,7 +604,7 @@ export function Settings() {
                       Hardware / GPU Acceleration
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Leverage CUDA, DirectML, or Apple Silicon MPS for 5x-10x faster AI inference.
+                      Use NVIDIA CUDA or Apple Silicon for much faster AI inference. AMD/Intel graphics run on the CPU.
                     </p>
                   </div>
                 </div>
@@ -719,6 +763,70 @@ export function Settings() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Check GitHub Releases for latest features and security updates.
+              </p>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label className="text-sm font-semibold">Media Tools</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="min-w-0 pr-2">
+                    <p className="text-xs font-semibold">yt-dlp</p>
+                    <p className="text-[11px] font-mono text-muted-foreground truncate">
+                      {toolVersions.ytdlp ?? "Not installed"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs shrink-0"
+                    disabled={isUpdatingYtdlp || !toolVersions.ytdlp}
+                    onClick={updateYtdlp}
+                    title="Check GitHub for a newer yt-dlp and install it automatically"
+                  >
+                    <RefreshCwIcon className={`h-3 w-3 mr-1 ${isUpdatingYtdlp ? "animate-spin" : ""}`} />
+                    {isUpdatingYtdlp ? "Updating..." : "Check & Update"}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-muted/30">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold">FFmpeg</p>
+                    <p className="text-[11px] font-mono text-muted-foreground truncate" title={toolVersions.ffmpeg ?? ""}>
+                      {toolVersions.ffmpeg ?? "Not installed"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Select
+                      value={selectedFfmpeg}
+                      onValueChange={(val) => val && setSelectedFfmpeg(val)}
+                      disabled={ffmpegVersions.length === 0 || isInstallingFfmpeg}
+                    >
+                      <SelectTrigger className="h-7 w-28 text-xs" aria-label="FFmpeg version">
+                        <SelectValue placeholder={ffmpegVersions.length ? "Version" : "Offline"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ffmpegVersions.map((v) => (
+                          <SelectItem key={v} value={v}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      disabled={!selectedFfmpeg || isInstallingFfmpeg}
+                      onClick={installFfmpeg}
+                      title="Download and install the selected FFmpeg + ffprobe build"
+                    >
+                      <Download className={`h-3 w-3 mr-1 ${isInstallingFfmpeg ? "animate-pulse" : ""}`} />
+                      {isInstallingFfmpeg ? "Installing..." : "Install"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                yt-dlp verifies and installs its own updates from GitHub. Switch FFmpeg builds only while no downloads or extractions are running.
               </p>
             </div>
           </TabsContent>
