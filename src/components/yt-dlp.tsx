@@ -34,6 +34,14 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { usePlayer } from "@/contexts/PlayerContext";
 
 export interface DownloadItem {
@@ -54,6 +62,8 @@ export interface DownloadItem {
 }
 
 export interface PlaylistEntry {
+  /** Unique per row; playlists can contain the same video id more than once. */
+  key: string;
   id: string;
   title: string;
   url: string;
@@ -76,6 +86,13 @@ function formatDuration(sec?: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function formatTotalDuration(sec: number): string {
+  if (!sec) return "--";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 export const FORMAT_LABELS: Record<string, string> = {
@@ -123,6 +140,7 @@ export function YtDlp() {
   // Playlist inspection modal / panel state
   const [playlist, setPlaylist] = useState<PlaylistState | null>(null);
   const [playlistSearch, setPlaylistSearch] = useState("");
+  const [isPlaylistConfirmOpen, setIsPlaylistConfirmOpen] = useState(false);
 
   const [downloads, setDownloads] = useState<DownloadItem[]>(() => {
     const saved = localStorage.getItem("remixer_downloads");
@@ -339,7 +357,8 @@ export function YtDlp() {
         if (parsed._type === "playlist" && Array.isArray(parsed.entries) && parsed.entries.length > 0) {
           const entries: PlaylistEntry[] = parsed.entries
             .filter((e: any) => e && (e.id || e.url))
-            .map((e: any) => ({
+            .map((e: any, index: number) => ({
+              key: `${index}-${e.id || e.url}`,
               id: e.id || Math.random().toString(36).substring(7),
               title: e.title || "Untitled Track",
               url: e.url || (e.id ? `https://www.youtube.com/watch?v=${e.id}` : url),
@@ -349,6 +368,7 @@ export function YtDlp() {
               selected: true,
             }));
 
+          setPlaylistSearch("");
           setPlaylist({
             id: parsed.id || "playlist",
             title: parsed.title || "Playlist",
@@ -391,13 +411,25 @@ export function YtDlp() {
     }
   };
 
+  const closePlaylist = () => {
+    setIsPlaylistConfirmOpen(false);
+    setPlaylist(null);
+    setPlaylistSearch("");
+  };
+
+  // Ask for confirmation before queueing the selected tracks
+  const requestQueuePlaylist = () => {
+    if (!playlist || !playlist.entries.some(e => e.selected)) return;
+    setIsPlaylistConfirmOpen(true);
+  };
+
   // Add selected playlist tracks into queue
   const queueSelectedPlaylistTracks = () => {
     if (!playlist) return;
 
     const selectedEntries = playlist.entries.filter(e => e.selected);
     if (selectedEntries.length === 0) {
-      alert("Please select at least one track to download.");
+      setIsPlaylistConfirmOpen(false);
       return;
     }
 
@@ -418,23 +450,31 @@ export function YtDlp() {
     }));
 
     setDownloads(prev => [...newItems, ...prev]);
-    setPlaylist(null);
+    closePlaylist();
     setUrl("");
   };
 
-  const toggleSelectAllPlaylist = (selected: boolean) => {
-    if (!playlist) return;
-    setPlaylist({
-      ...playlist,
-      entries: playlist.entries.map(e => ({ ...e, selected }))
+  // Applies to the rows currently visible, so "search + deselect all" removes just the matches
+  const setVisiblePlaylistSelection = (selected: boolean) => {
+    const visible = new Set(filteredPlaylistEntries.map(e => e.key));
+    setPlaylist(prev => prev && {
+      ...prev,
+      entries: prev.entries.map(e => visible.has(e.key) ? { ...e, selected } : e)
     });
   };
 
-  const togglePlaylistEntry = (id: string) => {
-    if (!playlist) return;
-    setPlaylist({
-      ...playlist,
-      entries: playlist.entries.map(e => e.id === id ? { ...e, selected: !e.selected } : e)
+  const invertPlaylistSelection = () => {
+    const visible = new Set(filteredPlaylistEntries.map(e => e.key));
+    setPlaylist(prev => prev && {
+      ...prev,
+      entries: prev.entries.map(e => visible.has(e.key) ? { ...e, selected: !e.selected } : e)
+    });
+  };
+
+  const togglePlaylistEntry = (key: string) => {
+    setPlaylist(prev => prev && {
+      ...prev,
+      entries: prev.entries.map(e => e.key === key ? { ...e, selected: !e.selected } : e)
     });
   };
 
@@ -467,13 +507,26 @@ export function YtDlp() {
     }
   };
 
-  // Filtered playlist entries
-  const filteredPlaylistEntries = playlist?.entries.filter(e =>
-    e.title.toLowerCase().includes(playlistSearch.toLowerCase()) ||
-    (e.uploader && e.uploader.toLowerCase().includes(playlistSearch.toLowerCase()))
-  ) || [];
+  // Filtered playlist entries (original position kept for numbering)
+  const searchTerm = playlistSearch.trim().toLowerCase();
+  const filteredPlaylistEntries = (playlist?.entries ?? [])
+    .map((entry, index) => ({ ...entry, position: index + 1 }))
+    .filter(e =>
+      !searchTerm ||
+      e.title.toLowerCase().includes(searchTerm) ||
+      (e.uploader?.toLowerCase().includes(searchTerm) ?? false)
+    );
 
-  const selectedPlaylistCount = playlist?.entries.filter(e => e.selected).length || 0;
+  const selectedPlaylistEntries = playlist?.entries.filter(e => e.selected) ?? [];
+  const selectedPlaylistCount = selectedPlaylistEntries.length;
+  const skippedPlaylistCount = (playlist?.entries.length ?? 0) - selectedPlaylistCount;
+  const selectedPlaylistDuration = selectedPlaylistEntries.reduce((sum, e) => sum + (e.duration || 0), 0);
+  const allVisibleSelected = filteredPlaylistEntries.length > 0 && filteredPlaylistEntries.every(e => e.selected);
+  const formatSummary = `${FORMAT_LABELS[format] || format} • ${
+    quality === 'best' && ['wav', 'flac', 'alac', 'aiff'].includes(format)
+      ? "Lossless (Source PCM)"
+      : (QUALITY_LABELS[quality] || quality)
+  }`;
 
   // Queue stats
   const activeCount = downloads.filter(d => d.status === 'initializing' || d.status === 'downloading' || d.status === 'analyzing').length;
@@ -660,37 +713,49 @@ export function YtDlp() {
                 </div>
                 <CardDescription className="mt-1">
                   {playlist.uploader && `By ${playlist.uploader} • `}
-                  {selectedPlaylistCount} of {playlist.trackCount} tracks selected for batch download
+                  {selectedPlaylistCount} of {playlist.trackCount} tracks selected
+                  {skippedPlaylistCount > 0 && ` • ${skippedPlaylistCount} skipped`}
+                  {selectedPlaylistDuration > 0 && ` • ${formatTotalDuration(selectedPlaylistDuration)}`}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => toggleSelectAllPlaylist(selectedPlaylistCount < playlist.entries.length)}
+                  onClick={() => setVisiblePlaylistSelection(!allVisibleSelected)}
+                  disabled={filteredPlaylistEntries.length === 0}
                 >
-                  {selectedPlaylistCount === playlist.entries.length ? (
+                  {allVisibleSelected ? (
                     <>
-                      <Square className="w-4 h-4 mr-1.5" /> Deselect All
+                      <Square className="w-4 h-4 mr-1.5" /> {searchTerm ? "Deselect Matches" : "Deselect All"}
                     </>
                   ) : (
                     <>
-                      <CheckSquare className="w-4 h-4 mr-1.5" /> Select All
+                      <CheckSquare className="w-4 h-4 mr-1.5" /> {searchTerm ? "Select Matches" : "Select All"}
                     </>
                   )}
                 </Button>
                 <Button
+                  variant="outline"
                   size="sm"
-                  onClick={queueSelectedPlaylistTracks}
+                  onClick={invertPlaylistSelection}
+                  disabled={filteredPlaylistEntries.length === 0}
+                >
+                  <RefreshCw className="w-4 h-4 mr-1.5" /> Invert
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={requestQueuePlaylist}
                   disabled={selectedPlaylistCount === 0}
                   className="bg-primary text-primary-foreground"
                 >
-                  Queue Selected ({selectedPlaylistCount})
+                  Download Selected ({selectedPlaylistCount})
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setPlaylist(null)}
+                  onClick={closePlaylist}
+                  title="Close playlist"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -707,21 +772,26 @@ export function YtDlp() {
             </div>
           </CardHeader>
           <CardContent className="p-0 max-h-[360px] overflow-y-auto divide-y divide-border/40">
-            {filteredPlaylistEntries.map((entry, index) => (
+            {filteredPlaylistEntries.length === 0 && (
+              <div className="p-6 text-center text-xs text-muted-foreground">
+                No tracks match "{playlistSearch}"
+              </div>
+            )}
+            {filteredPlaylistEntries.map((entry) => (
               <div
-                key={entry.id || index}
-                onClick={() => togglePlaylistEntry(entry.id)}
+                key={entry.key}
+                onClick={() => togglePlaylistEntry(entry.key)}
                 className={`flex items-center gap-3 p-2.5 px-4 cursor-pointer transition-colors hover:bg-muted/50 ${
-                  entry.selected ? "bg-primary/5" : "opacity-60"
+                  entry.selected ? "bg-primary/5" : "opacity-50"
                 }`}
               >
                 <Checkbox
                   checked={entry.selected}
-                  onCheckedChange={() => togglePlaylistEntry(entry.id)}
+                  onCheckedChange={() => togglePlaylistEntry(entry.key)}
                   onClick={(e) => e.stopPropagation()}
                 />
                 <span className="text-xs text-muted-foreground w-6 text-right font-mono">
-                  {index + 1}
+                  {entry.position}
                 </span>
                 {entry.thumbnail ? (
                   <img
@@ -735,7 +805,9 @@ export function YtDlp() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{entry.title}</div>
+                  <div className={`text-sm font-medium truncate ${entry.selected ? "" : "line-through"}`}>
+                    {entry.title}
+                  </div>
                   {entry.uploader && (
                     <div className="text-xs text-muted-foreground truncate">{entry.uploader}</div>
                   )}
@@ -748,6 +820,41 @@ export function YtDlp() {
           </CardContent>
         </Card>
       )}
+
+      {/* Playlist download confirmation */}
+      <Dialog open={isPlaylistConfirmOpen && !!playlist} onOpenChange={setIsPlaylistConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListMusic className="w-4 h-4 text-primary" /> Download playlist?
+            </DialogTitle>
+            <DialogDescription className="truncate">
+              {playlist?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+            <span className="text-muted-foreground">Tracks</span>
+            <span className="font-medium">
+              {selectedPlaylistCount} of {playlist?.trackCount ?? 0}
+              {skippedPlaylistCount > 0 && (
+                <span className="text-muted-foreground font-normal"> ({skippedPlaylistCount} skipped)</span>
+              )}
+            </span>
+            <span className="text-muted-foreground">Total length</span>
+            <span className="font-medium">{formatTotalDuration(selectedPlaylistDuration)}</span>
+            <span className="text-muted-foreground">Format</span>
+            <span className="font-medium">{formatSummary}</span>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPlaylistConfirmOpen(false)}>
+              Back
+            </Button>
+            <Button onClick={queueSelectedPlaylistTracks} autoFocus>
+              Download {selectedPlaylistCount} {selectedPlaylistCount === 1 ? "track" : "tracks"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Downloads & Batch Queue List */}
       {downloads.length > 0 && (
