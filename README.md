@@ -1,79 +1,178 @@
+<div align="center">
+
+<img src="app-icon.png" alt="Remixer Tools" width="128" height="128" />
+
 # Remixer Tools
 
-**Remixer Tools** is a powerful, cross-platform desktop application designed for DJs, producers, and audio engineers. It seamlessly combines high-quality audio acquisition with state-of-the-art AI stem separation into a unified, easy-to-use interface.
+**Download, separate, convert, and trim audio. All on your own machine.**
 
-Built with **Tauri**, **React**, and **TypeScript**, Remixer Tools runs entirely locally on your machine, leveraging hardware acceleration to process audio quickly and securely without relying on cloud services.
+A cross-platform desktop toolkit for DJs, producers, and audio engineers.
+
+[![Latest Release](https://img.shields.io/github/v/release/neondeveloperz/remixer-tools?style=for-the-badge&logo=github&color=8b5cf6)](https://github.com/neondeveloperz/remixer-tools/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/neondeveloperz/remixer-tools/total?style=for-the-badge&logo=download&color=22c55e)](https://github.com/neondeveloperz/remixer-tools/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-3b82f6?style=for-the-badge)](LICENSE)
+
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
+![Tauri](https://img.shields.io/badge/Tauri_2-24C8DB?style=flat-square&logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
+
+[**📥 Download**](https://github.com/neondeveloperz/remixer-tools/releases/latest) •
+[**✨ Features**](#-features) •
+[**🚀 Build from Source**](#-building-from-source) •
+[**📜 Changelog**](CHANGELOG.md) •
+[**🐛 Report a Bug**](https://github.com/neondeveloperz/remixer-tools/issues)
+
+</div>
+
+---
+
+> [!NOTE]
+> 🔒 **100% local.** No cloud services, no uploads, no accounts. Your audio never leaves your computer.
 
 ## ✨ Features
 
-- **Media Downloader**
-  - Integrated `yt-dlp` for extracting high-quality audio directly from supported URLs.
-  - Automatic conversion to professional formats (WAV, FLAC, MP3) via FFmpeg.
-- **AI STEM Extractor**
-  - Powered by industry-leading models including **Demucs v4 (6-stems)**, **UVR MDX-Net**, and **Kim Vocal 2 (RoFormer)**.
-  - Isolate Vocals, Drums, Bass, Guitar, Piano, and other elements with unprecedented clarity.
-  - Selectable output formats (FLAC, WAV, MP3, OGG).
-  - **Cancelable Extraction:** Safely stop the extraction process at any time.
-  - **Drag and Drop Interface:** Quickly import audio files by dropping them directly into the app.
-- **Audio Analysis & Playback**
-  - **BPM & Key Detection:** Automatically analyzes the tempo and musical key of your imported or downloaded tracks.
-  - **Built-in STEM Mixer:** Preview separated tracks with a real-time waveform visualizer, mute, and solo controls.
-- **Library & Model Management**
-  - **History & Library Dashboard:** Easily organize, play, and manage your downloaded files and extracted stems.
-  - **AI Model Store:** Browse, download, and manage AI models directly from the app, or import your own custom PyTorch/ONNX models.
-- **Hardware Acceleration**
-  - **macOS:** Automatic Metal Performance Shaders (MPS) and CoreML utilization for Apple Silicon.
-  - **Windows:** Support for DirectML (AMD/Intel) and CUDA (NVIDIA) to drastically reduce processing time.
-- **Zero-Configuration Environment**
-  - No need to manually install Python or manage complex machine learning libraries.
-  - The application automatically bootstraps a portable, standalone Python 3.11 environment in the background to safely manage its AI dependencies (`torch`, `onnxruntime`, `audio-separator`).
+| | Tool | What it does |
+| :---: | --- | --- |
+| 📥 | **Media Downloader** | Grab audio or video from YouTube, SoundCloud, Facebook, X/Twitter, and [every site yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). |
+| 🎚️ | **AI STEM Extractor** | Split songs into vocals, drums, bass, guitar, piano, and more with Demucs, MDX-Net, and RoFormer. |
+| 🎛️ | **STEM Mixer** | Play stems together with per-track volume, mute, and solo, all in sync. |
+| 🎹 | **MIDI Extractor** | Turn audio into `.mid` files with Basic Pitch and preview them in a piano roll. |
+| ✂️ | **Audio Trimmer** | Cut out just the part you need, losslessly where possible. |
+| 📚 | **Library & Model Store** | Manage everything you've made, and download or import AI models. |
 
-## 🚀 Getting Started
+### 📥 Media Downloader
 
-### Prerequisites
+- 🎵 **Lossless audio:** WAV, FLAC, ALAC, AIFF
+- 🎧 **Compressed audio:** MP3, M4A, Opus, OGG, AAC (up to 320 kbps)
+- 🎬 **Video:** MP4, MKV, WebM, MOV, up to 8K
+- 🏷️ Metadata, chapters, and cover art embedded automatically
+- 📃 **Playlists & Sets:** paste a YouTube playlist or SoundCloud set, untick the tracks you don't want (search, select matches, invert), confirm, and download them as a batch queue with configurable concurrency
 
-To build and run the application from source, you will need:
-- [Node.js](https://nodejs.org/) & [Bun](https://bun.sh/)
+### 🎚️ AI STEM Extractor
+
+- 🧠 Models: **Demucs v4 (4/6-stem)**, **UVR MDX-Net**, **RoFormer** vocal models, or import your own PyTorch/ONNX model
+- 💾 Output as FLAC, WAV, MP3, or OGG
+- 🖱️ Drag-and-drop import, batch queue, and cancelable extraction
+
+### 🎹 MIDI Extractor
+
+- 🎼 Instrument presets (including **Piano Solo** with pedal-resonance cleanup)
+- 🎯 Detection sensitivity: Clean / Balanced / High
+- 🥁 Automatic BPM detection and beat-grid snapping
+- 👀 Built-in piano roll preview, then drag the `.mid` into your DAW
+
+### ✂️ Audio Trimmer
+
+- 〰️ Pick a section on the waveform and preview it before saving
+- ⚡ MP3, M4A, and OGG are cut **without re-encoding**; FLAC and WAV are cut **sample-accurately**
+- 🛡️ The original file is never changed
+- ➡️ **Send to STEM Extractor** to separate only that section, which is much faster than the whole song
+
+### 🧰 Built-in Extras
+
+- 🎼 **BPM & Key Detection:** tempo and key written into tags and filenames
+- 🔄 **Auto-Update:** signed releases are installed in-app
+- 🛠️ **Media Tools:** update yt-dlp and switch FFmpeg builds from Settings
+- 🐍 **Zero-config AI environment:** a portable Python 3.11 setup is bootstrapped for you, with one-click **Repair**
+
+## ⚡ Hardware Acceleration
+
+| Hardware | Platform | Acceleration |
+| --- | --- | :---: |
+| NVIDIA GPU | Windows | ✅ CUDA |
+| Apple Silicon | macOS | ✅ MPS |
+| AMD / Intel GPU | Windows | ⚠️ CPU (works, expect several minutes per song) |
+
+> [!TIP]
+> Running out of GPU memory? Turn on **Low VRAM Memory Mode** in Settings.
+
+## 📁 Where Files Go
+
+Everything lives in one base folder (default: `Downloads/remixer-tools`), changeable in **Settings → Storage & Appearance**:
+
+```text
+remixer-tools/
+├── library/   📥 downloads and trimmed files
+├── stems/     🎚️ one folder per separated song
+└── midi/      🎹 converted MIDI files
+```
+
+## ⚠️ First Launch
+
+> [!WARNING]
+> Remixer Tools is not code-signed yet, so your OS shows a warning the first time you open it.
+> Only download the app from the official [GitHub Releases](https://github.com/neondeveloperz/remixer-tools/releases) page.
+
+- 🪟 **Windows (SmartScreen):** click **More info → Run anyway**
+- 🍎 **macOS (Gatekeeper):** right-click the app, choose **Open**, then confirm
+
+On first launch the app downloads `yt-dlp`, `ffmpeg`/`ffprobe`, and the Python environment for the AI tools (a few GB). Give it a few minutes.
+
+## 🚀 Building from Source
+
+<details>
+<summary><b>📋 Prerequisites</b></summary>
+
+<br />
+
+- [Bun](https://bun.sh/) (or [Node.js](https://nodejs.org/))
 - [Rust](https://www.rust-lang.org/tools/install)
-- macOS/Linux build tools (`xcode-select --install` or `build-essential`)
-- Windows build tools (Visual Studio C++ Build Tools)
+- Platform build tools:
+  - **macOS:** `xcode-select --install`
+  - **Linux:** `build-essential` + the [Tauri Linux dependencies](https://tauri.app/start/prerequisites/)
+  - **Windows:** Visual Studio C++ Build Tools
 
-### Installation & Development
+</details>
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/remixer-tools.git
-   cd remixer-tools
-   ```
+```bash
+git clone https://github.com/neondeveloperz/remixer-tools.git
+cd remixer-tools
+bun install
+bun tauri dev
+```
 
-2. Install frontend dependencies:
-   ```bash
-   bun install
-   ```
-
-3. Start the development server with Tauri:
-   ```bash
-   bun tauri dev
-   ```
-
-*Note: On first run, the application will automatically download the necessary dependencies (`yt-dlp`, `ffmpeg`, and the isolated Python environment). Please allow a few minutes for this initial setup to complete.*
+| Command | Description |
+| --- | --- |
+| `bun tauri dev` | 🔥 Run the app in development mode |
+| `bun tauri build` | 📦 Build a production installer |
+| `bun run typecheck` | 🔍 TypeScript check |
+| `bun run lint` | 🧹 ESLint |
 
 ## 🛠 Tech Stack
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- **Backend:** Rust (Tauri), standard UNIX/Windows process interop
-- **AI / Audio:** [yt-dlp](https://github.com/yt-dlp/yt-dlp), [FFmpeg](https://ffmpeg.org/), [audio-separator](https://github.com/nomadkaraoke/python-audio-separator), PyTorch
+| Layer | Technologies |
+| --- | --- |
+| 🖥️ **Frontend** | React, TypeScript, Vite, Tailwind CSS, shadcn/ui |
+| ⚙️ **Backend** | Rust, Tauri 2 |
+| 🎧 **Audio / AI** | [yt-dlp](https://github.com/yt-dlp/yt-dlp), [FFmpeg](https://ffmpeg.org/), [audio-separator](https://github.com/nomadkaraoke/python-audio-separator), [Basic Pitch](https://github.com/spotify/basic-pitch), PyTorch |
+
+## 🐛 Reporting Bugs
+
+Open an [issue](https://github.com/neondeveloperz/remixer-tools/issues) and attach `Remixer Tools.log`.
+In the app, go to **Get Help → Open Log Folder** to find it.
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you have suggestions for new features or find a bug, please open an issue or submit a pull request. 
+Contributions are welcome! Open an issue for ideas or bugs, or send a pull request:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. 🍴 Fork the project
+2. 🌿 Create a feature branch: `git checkout -b feature/amazing-feature`
+3. 💬 Commit with [Conventional Commits](https://www.conventionalcommits.org/) + Gitmoji, e.g. `✨ feat(downloader): ...`
+4. 🚀 Push the branch and open a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Released under the [MIT License](LICENSE).
+
+<div align="center">
+
+<br />
+
+**Made with 🎧 for DJs, producers, and remixers.**
+
+⭐ If Remixer Tools helps you, consider giving the repo a star!
+
+</div>
