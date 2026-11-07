@@ -1,5 +1,13 @@
 # Changelog
 
+## 🚀 What's New in v1.4.1
+- **Clearer Update Errors:**
+  - If an in-app update fails, the update window now explains why (for example, a signature mismatch when updating from v1.3.1 or older) instead of a generic "Failed to install update" message.
+  - New "Download Manually" button opens the release page, plus a "Try Again" button. The real error is also written to `Remixer Tools.log`.
+  - The update window can now be closed with the X button.
+- **Release Notes in the Updater:**
+  - The update window now shows what's new in the version instead of a generic "See the assets below" message.
+
 ## 🚀 What's New in v1.4.0
 - **Audio Trimmer (new page):**
   - Pick a file, drag the handles under the waveform to choose a section, and preview it before saving. The trimmed copy is saved to your `library` folder as `Song (trim 0m30s-1m45s)`; the original is never changed.
