@@ -1,5 +1,15 @@
 # Changelog
 
+## 🚀 What's New in v1.4.0
+- **Audio Trimmer (new page):**
+  - Pick a file, drag the handles under the waveform to choose a section, and preview it before saving. The trimmed copy is saved to your `library` folder as `Song (trim 0m30s-1m45s)`; the original is never changed.
+  - MP3, M4A and OGG are cut without re-encoding (no quality loss); FLAC and WAV are cut to the exact sample. Video files are saved as WAV audio.
+  - "Send to STEM Extractor" separates only the trimmed section, which is much faster than processing the whole song.
+- **Playlist Downloads:**
+  - A confirmation popup now shows how many tracks will be downloaded, how many are skipped, total length, and format/quality before anything is queued.
+  - Select All / Deselect All work on search results, plus a new Invert button, so you can quickly drop the tracks you don't want.
+  - Fixed playlists containing the same video twice: ticking one copy no longer toggled the other.
+
 ## 🚀 What's New in v1.3.3
 - **Auto-Update Now Works:**
   - Releases now include signed updater files (`latest.json` + signatures). Previously the update check always failed with a 404, so installed apps never saw new versions. From this release on, the app can find, download, and install updates by itself.
