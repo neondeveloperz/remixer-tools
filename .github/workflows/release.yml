@@ -70,6 +70,30 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
+      # The release body doubles as the "notes" field of latest.json, which the in-app
+      # updater shows before installing, so use this version's CHANGELOG section.
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          notes=$(awk -v ver="v${version}" '
+            /^## / { if (found) exit; if (index($0, ver) && substr($0, index($0, ver) + length(ver), 1) !~ /[0-9.]/) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md)
+          if [ -z "${notes//[[:space:]]/}" ]; then
+            echo "::warning::No CHANGELOG.md section found for v${version}; using default release notes."
+            notes="See the assets below to download this version."
+          fi
+          notes="${notes}"$'\n\n'"The Windows portable executable requires the Microsoft Edge WebView2 Runtime."
+          delimiter="NOTES_EOF_${RANDOM}${RANDOM}${RANDOM}"
+          {
+            echo "body<<${delimiter}"
+            echo "${notes}"
+            echo "${delimiter}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and publish
         id: tauri
         uses: tauri-apps/tauri-action@action-v0.6.2
@@ -80,9 +104,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: v__VERSION__
-          releaseBody: |
-            See the assets below to download this version.
-            The Windows portable executable requires the Microsoft Edge WebView2 Runtime.
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           generateReleaseNotes: true
