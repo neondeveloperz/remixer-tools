@@ -16,6 +16,7 @@ import { ModelStore } from "@/components/model-store"
 import { LibraryDashboard } from "@/components/library-dashboard"
 import { StemMixerPage } from "@/components/stem-mixer-page"
 import { MidiExtractor } from "@/components/midi-extractor"
+import { AudioTrimmer } from "@/components/audio-trimmer"
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext"
 import { StemPlayer } from "@/components/stem-player"
 import { Updater } from "@/components/updater"
@@ -48,6 +49,7 @@ function AppContent() {
       case "stem-extractor": return "STEM Extractor"
       case "stem-mixer": return "STEM Mixer Studio"
       case "midi-extractor": return "MIDI Extractor (Audio to MIDI)"
+      case "audio-trimmer": return "Audio Trimmer"
       case "library": return "History & Library"
       case "model-store": return "AI Model Store"
       case "settings": return "Settings"
@@ -98,6 +100,9 @@ function AppContent() {
                       onNavigateToMixer={() => setActivePage("stem-mixer")}
                       onNavigateToLibrary={() => setActivePage("library")}
                     />
+                  </div>
+                  <div className={activePage === "audio-trimmer" ? "block" : "hidden"}>
+                    <AudioTrimmer onSendToExtractor={handleSendToExtractor} />
                   </div>
                   <div className={activePage === "library" ? "block" : "hidden"}>
                     <LibraryDashboard

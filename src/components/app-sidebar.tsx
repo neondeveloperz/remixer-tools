@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders, Piano } from "lucide-react"
+import { Settings2Icon, CircleHelpIcon, CommandIcon, DownloadIcon, MusicIcon, StoreIcon, FolderArchiveIcon, Sliders, Piano, Scissors } from "lucide-react"
 import { usePlayer } from "@/contexts/PlayerContext"
 
 const data = {
@@ -48,6 +48,13 @@ const data = {
         <Piano />
       ),
       badge: "Beta",
+    },
+    {
+      title: "Audio Trimmer",
+      id: "audio-trimmer",
+      icon: (
+        <Scissors />
+      ),
     },
   ],
   navLibrary: [

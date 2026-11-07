@@ -91,6 +91,14 @@ export function Help() {
               </AccordionContent>
             </AccordionItem>
 
+            <AccordionItem value="trimmer">
+              <AccordionTrigger>How do I cut out part of a song?</AccordionTrigger>
+              <AccordionContent className="space-y-2 text-muted-foreground">
+                <p>Open <strong>Audio Trimmer</strong>, choose a file, drag the two handles under the waveform to the section you want, and press play to preview it. <strong>Save Trimmed File</strong> writes it to your <code>library</code> folder as <code>Song (trim 0m30s-1m45s)</code>. The original is never changed.</p>
+                <p>MP3, M4A and OGG are cut without re-encoding, so quality stays the same. The cut can land up to a few hundredths of a second off. FLAC and WAV are cut to the exact sample. Video files are saved as WAV audio.</p>
+                <p>Use <strong>Send to STEM Extractor</strong> to separate only that section, which is much faster than the whole song.</p>
+              </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="tools">
               <AccordionTrigger>Downloads suddenly fail. What should I do?</AccordionTrigger>
               <AccordionContent className="space-y-2 text-muted-foreground">

@@ -10,6 +10,7 @@ pub mod extractor;
 pub mod ai_models;
 pub mod analyzer;
 pub mod midi;
+pub mod trimmer;
 
 use settings::*;
 use storage::*;
@@ -18,6 +19,7 @@ use extractor::*;
 use ai_models::*;
 use analyzer::*;
 use midi::*;
+use trimmer::*;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -147,6 +149,7 @@ pub fn run() {
             update_ytdlp,
             list_ffmpeg_versions,
             install_ffmpeg,
+            trim_audio,
             get_download_dir,
             open_download_folder,
             set_download_dir,
